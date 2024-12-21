@@ -1,0 +1,2 @@
+# ragnar
+RAG Based Assistant
