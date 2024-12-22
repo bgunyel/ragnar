@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "ragnar"
+version = "0.1.0"
+description = "Ragnar"
+authors = ["Bertan Günyel <bertan.gunyel@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11.3"
+streamlit = "^1.41.1"
+langchain = "^0.3.13"
+langchain-core = "^0.3.28"
+langchain-ollama = "^0.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
