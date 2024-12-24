@@ -1,31 +1,10 @@
-import time
-import random
-
 import streamlit as st
-from langchain_ollama import OllamaLLM, ChatOllama
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.memory import ConversationSummaryBufferMemory
-from langchain.chains import ConversationChain
+from ragnar.backend.rag_engine import RagEngine
 
-
-template = """
-Your name is Ragnar. 
-
-Answer the following question:
-
-Here is the conversation history: {context}
-
-Question: {question}
-
-Answer:    
-"""
-
-model = ChatOllama(model='llama3:8b', temperature=0.5, num_predict=256)
-memory = ConversationSummaryBufferMemory(llm=model, max_token_limit=256)
-prompt = ChatPromptTemplate.from_template(template=template)
-chain = prompt | model
 
 if __name__ == '__main__':
+
+    rag_engine = RagEngine()
 
     st.set_page_config(
         page_title="Ragnar",
@@ -37,12 +16,11 @@ if __name__ == '__main__':
 
     # Display chat messages from history on app rerun
     for message in st.session_state.messages:
-        if message['role'] != 'system':
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
     # Accept user input
-    user_message = st.chat_input("What is up?")
+    user_message = st.chat_input('Write to Ragnar')
     if user_message:
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": user_message})
@@ -51,7 +29,7 @@ if __name__ == '__main__':
             st.markdown(user_message)
 
         # Display assistant response in chat message container
-        response = chain.stream({'context': st.session_state.messages, 'question': user_message})
+        response = rag_engine.stream_response(user_message=user_message)
         with st.chat_message("assistant"):
             result = st.write_stream(response)  ##
         st.session_state.messages.append({"role": "assistant", "content": result})
