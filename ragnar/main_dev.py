@@ -17,7 +17,7 @@ def main():
             break
 
         response = rag_engine.stream_response(user_message=user_input)
-        print('Ragnar: ')
+        print(f'Ragnar ({settings.MODEL}): ', end='')
         chunk_id = 0
         for chunk in response:
             print(chunk.content, end='')

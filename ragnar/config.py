@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     ENABLE_RELOAD: bool = False
 
     UI_PORT: int = 8501
+    INPUT_FOLDER: str
     OUT_FOLDER: str
     MODEL: str
 
