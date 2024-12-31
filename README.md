@@ -1,2 +1,3 @@
-# ragnar
-RAG Based Assistant
+# RAGNAR
+
+## Retrieval Augmented Generation based kNowledge AdviseR

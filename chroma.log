@@ -1,0 +1,291 @@
+[33mWARNING[0m:  [30-12-2024 17:44:24] chroma_server_nofile is set to 65535, but this is less than current soft limit of 1048576. chroma_server_nofile will not be set.
+[32mINFO[0m:     [30-12-2024 17:44:24] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component System
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component SqliteDB
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component Posthog
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component LocalExecutor
+[36mDEBUG[0m:    [30-12-2024 17:44:24] Starting component SegmentAPI
+[32mINFO[0m:     [30-12-2024 17:44:24] Started server process [[36m283699[0m]
+[32mINFO[0m:     [30-12-2024 17:44:24] Waiting for application startup.
+[32mINFO[0m:     [30-12-2024 17:44:24] Application startup complete.
+[32mINFO[0m:     [30-12-2024 17:44:24] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [30-12-2024 17:44:53] 127.0.0.1:52190 - "GET / HTTP/1.1" 404
+[32mINFO[0m:     [30-12-2024 17:44:54] 127.0.0.1:52190 - "GET /favicon.ico HTTP/1.1" 404
+[32mINFO[0m:     [30-12-2024 18:04:38] 127.0.0.1:39734 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:04:38] 127.0.0.1:39738 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:04:38] 127.0.0.1:39738 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:04:38] 127.0.0.1:39734 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:08:43] 127.0.0.1:51340 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:08:43] 127.0.0.1:51346 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:08:43] 127.0.0.1:51346 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [30-12-2024 18:08:43] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [30-12-2024 18:08:43] 127.0.0.1:51340 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:11:20] 127.0.0.1:41814 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:11:20] 127.0.0.1:41826 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:11:20] 127.0.0.1:41826 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [30-12-2024 18:11:20] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [30-12-2024 18:11:20] 127.0.0.1:41814 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:16:48] 127.0.0.1:49620 - "GET /docs HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:16:49] 127.0.0.1:49620 - "GET /openapi.json HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 18:18:21] 127.0.0.1:45160 - "GET /api/v1/collections?tenant=default_tenant&database=default_database HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:25:47] 127.0.0.1:51078 - "GET /api/v2/pre-flight-checks HTTP/1.1" 200
+[36mDEBUG[0m:    [30-12-2024 19:25:47] Starting component PersistentLocalHnswSegment
+[32mINFO[0m:     [30-12-2024 19:25:47] 127.0.0.1:51078 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/6cfff9bc-e3cf-466d-94ac-766b98485ebc/upsert HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:42:50] Shutting down
+[32mINFO[0m:     [30-12-2024 19:42:50] Waiting for application shutdown.
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component System
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component SegmentAPI
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component LocalExecutor
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component PersistentLocalHnswSegment
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component LocalSegmentManager
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component Posthog
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component SqliteDB
+[36mDEBUG[0m:    [30-12-2024 19:42:50] Stopping component OpenTelemetryClient
+[32mINFO[0m:     [30-12-2024 19:42:50] Application shutdown complete.
+[32mINFO[0m:     [30-12-2024 19:42:50] Finished server process [[36m283699[0m]
+[33mWARNING[0m:  [30-12-2024 19:52:17] chroma_server_nofile is set to 65535, but this is less than current soft limit of 1048576. chroma_server_nofile will not be set.
+[32mINFO[0m:     [30-12-2024 19:52:17] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component System
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component SqliteDB
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component Posthog
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component LocalExecutor
+[36mDEBUG[0m:    [30-12-2024 19:52:17] Starting component SegmentAPI
+[32mINFO[0m:     [30-12-2024 19:52:17] Started server process [[36m293794[0m]
+[32mINFO[0m:     [30-12-2024 19:52:17] Waiting for application startup.
+[32mINFO[0m:     [30-12-2024 19:52:17] Application startup complete.
+[32mINFO[0m:     [30-12-2024 19:52:17] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [30-12-2024 19:52:45] 127.0.0.1:39740 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:52:45] 127.0.0.1:39746 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:52:45] 127.0.0.1:39746 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:52:45] 127.0.0.1:39740 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:52:53] 127.0.0.1:40104 - "GET /api/v2/pre-flight-checks HTTP/1.1" 200
+[36mDEBUG[0m:    [30-12-2024 19:52:53] Starting component PersistentLocalHnswSegment
+[32mINFO[0m:     [30-12-2024 19:52:53] 127.0.0.1:40104 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/upsert HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:06] 127.0.0.1:55210 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:06] 127.0.0.1:55224 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:06] 127.0.0.1:55224 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [30-12-2024 19:56:06] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [30-12-2024 19:56:06] 127.0.0.1:55210 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:10] 127.0.0.1:55210 - "GET /api/v2/pre-flight-checks HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:10] 127.0.0.1:55210 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/upsert HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:51] 127.0.0.1:57178 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:51] 127.0.0.1:57184 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:51] 127.0.0.1:57184 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [30-12-2024 19:56:51] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [30-12-2024 19:56:51] 127.0.0.1:57178 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:56] 127.0.0.1:57178 - "GET /api/v2/pre-flight-checks HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:56:57] 127.0.0.1:57178 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/upsert HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:58:27] 127.0.0.1:49740 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:58:27] 127.0.0.1:49746 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:58:27] 127.0.0.1:49746 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [30-12-2024 19:58:27] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [30-12-2024 19:58:27] 127.0.0.1:49740 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 19:58:41] 127.0.0.1:35386 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/query HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 20:01:36] 127.0.0.1:57002 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 20:01:36] 127.0.0.1:57018 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 20:01:36] 127.0.0.1:57018 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [30-12-2024 20:01:36] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [30-12-2024 20:01:36] 127.0.0.1:57002 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 20:01:55] 127.0.0.1:48870 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/query HTTP/1.1" 200
+[32mINFO[0m:     [30-12-2024 20:14:18] Shutting down
+[32mINFO[0m:     [30-12-2024 20:14:18] Waiting for application shutdown.
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component System
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component SegmentAPI
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component LocalExecutor
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component PersistentLocalHnswSegment
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component LocalSegmentManager
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component Posthog
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component SqliteDB
+[36mDEBUG[0m:    [30-12-2024 20:14:18] Stopping component OpenTelemetryClient
+[32mINFO[0m:     [30-12-2024 20:14:18] Application shutdown complete.
+[32mINFO[0m:     [30-12-2024 20:14:18] Finished server process [[36m293794[0m]
+[33mWARNING[0m:  [31-12-2024 10:43:44] chroma_server_nofile is set to 65535, but this is less than current soft limit of 1048576. chroma_server_nofile will not be set.
+[32mINFO[0m:     [31-12-2024 10:43:44] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component System
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component Posthog
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 10:43:44] Starting component SegmentAPI
+[32mINFO[0m:     [31-12-2024 10:43:44] Started server process [[36m303898[0m]
+[32mINFO[0m:     [31-12-2024 10:43:44] Waiting for application startup.
+[32mINFO[0m:     [31-12-2024 10:43:44] Application startup complete.
+[32mINFO[0m:     [31-12-2024 10:43:44] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [31-12-2024 10:43:52] 127.0.0.1:47870 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 10:43:52] 127.0.0.1:47882 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 10:43:52] 127.0.0.1:47882 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 10:43:52] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [31-12-2024 10:43:52] 127.0.0.1:47870 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 10:44:15] Starting component PersistentLocalHnswSegment
+[32mINFO[0m:     [31-12-2024 10:44:15] 127.0.0.1:40312 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/query HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 10:48:38] Shutting down
+[32mINFO[0m:     [31-12-2024 10:48:38] Waiting for application shutdown.
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component System
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component SegmentAPI
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component PersistentLocalHnswSegment
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component Posthog
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 10:48:38] Stopping component OpenTelemetryClient
+[32mINFO[0m:     [31-12-2024 10:48:38] Application shutdown complete.
+[32mINFO[0m:     [31-12-2024 10:48:38] Finished server process [[36m303898[0m]
+[33mWARNING[0m:  [31-12-2024 10:54:53] chroma_server_nofile is set to 65535, but this is less than current soft limit of 1048576. chroma_server_nofile will not be set.
+[32mINFO[0m:     [31-12-2024 10:54:53] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component System
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component Posthog
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 10:54:53] Starting component SegmentAPI
+[32mINFO[0m:     [31-12-2024 10:54:53] Started server process [[36m305150[0m]
+[32mINFO[0m:     [31-12-2024 10:54:53] Waiting for application startup.
+[32mINFO[0m:     [31-12-2024 10:54:53] Application startup complete.
+[32mINFO[0m:     [31-12-2024 10:54:53] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [31-12-2024 10:55:56] 127.0.0.1:52446 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 10:55:56] 127.0.0.1:52448 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 10:55:56] 127.0.0.1:52448 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 10:55:56] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [31-12-2024 10:55:56] 127.0.0.1:52446 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 10:56:21] Starting component PersistentLocalHnswSegment
+[32mINFO[0m:     [31-12-2024 10:56:21] 127.0.0.1:43822 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/query HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:12:01] Shutting down
+[32mINFO[0m:     [31-12-2024 11:12:01] Waiting for application shutdown.
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component System
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component SegmentAPI
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component PersistentLocalHnswSegment
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component Posthog
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 11:12:01] Stopping component OpenTelemetryClient
+[32mINFO[0m:     [31-12-2024 11:12:01] Application shutdown complete.
+[32mINFO[0m:     [31-12-2024 11:12:01] Finished server process [[36m305150[0m]
+[33mWARNING[0m:  [31-12-2024 11:12:11] chroma_server_nofile is set to 65535, but this is less than current soft limit of 1048576. chroma_server_nofile will not be set.
+[32mINFO[0m:     [31-12-2024 11:12:11] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component System
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component Posthog
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 11:12:11] Starting component SegmentAPI
+[32mINFO[0m:     [31-12-2024 11:12:11] Started server process [[36m307083[0m]
+[32mINFO[0m:     [31-12-2024 11:12:11] Waiting for application startup.
+[32mINFO[0m:     [31-12-2024 11:12:11] Application startup complete.
+[32mINFO[0m:     [31-12-2024 11:12:11] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [31-12-2024 11:12:30] Shutting down
+[32mINFO[0m:     [31-12-2024 11:12:31] Waiting for application shutdown.
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component System
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component SegmentAPI
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component Posthog
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 11:12:31] Stopping component OpenTelemetryClient
+[32mINFO[0m:     [31-12-2024 11:12:31] Application shutdown complete.
+[32mINFO[0m:     [31-12-2024 11:12:31] Finished server process [[36m307083[0m]
+[33mWARNING[0m:  [31-12-2024 11:13:54] chroma_server_nofile is set to 65535, but this is less than current soft limit of 1048576. chroma_server_nofile will not be set.
+[32mINFO[0m:     [31-12-2024 11:13:54] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component System
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component Posthog
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 11:13:54] Starting component SegmentAPI
+[32mINFO[0m:     [31-12-2024 11:13:54] Started server process [[36m307230[0m]
+[32mINFO[0m:     [31-12-2024 11:13:54] Waiting for application startup.
+[32mINFO[0m:     [31-12-2024 11:13:54] Application startup complete.
+[32mINFO[0m:     [31-12-2024 11:13:54] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [31-12-2024 11:14:10] 127.0.0.1:35882 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:14:10] 127.0.0.1:35884 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:14:10] 127.0.0.1:35884 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 11:14:10] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [31-12-2024 11:14:10] 127.0.0.1:35882 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 11:14:21] Starting component PersistentLocalHnswSegment
+[32mINFO[0m:     [31-12-2024 11:14:21] 127.0.0.1:46462 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/query HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:16:21] 127.0.0.1:59916 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:16:21] 127.0.0.1:59924 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:16:21] 127.0.0.1:59924 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 11:16:21] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [31-12-2024 11:16:21] 127.0.0.1:59916 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:16:31] 127.0.0.1:49856 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/query HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:21:38] Shutting down
+[32mINFO[0m:     [31-12-2024 11:21:38] Waiting for application shutdown.
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component System
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component SegmentAPI
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component PersistentLocalHnswSegment
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component Posthog
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 11:21:38] Stopping component OpenTelemetryClient
+[32mINFO[0m:     [31-12-2024 11:21:38] Application shutdown complete.
+[32mINFO[0m:     [31-12-2024 11:21:38] Finished server process [[36m307230[0m]
+[33mWARNING[0m:  [31-12-2024 11:24:08] chroma_server_nofile is set to 65535, but this is less than current soft limit of 1048576. chroma_server_nofile will not be set.
+[32mINFO[0m:     [31-12-2024 11:24:09] Anonymized telemetry enabled. See                     https://docs.trychroma.com/telemetry for more information.
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component System
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component OpenTelemetryClient
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component Posthog
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 11:24:09] Starting component SegmentAPI
+[32mINFO[0m:     [31-12-2024 11:24:09] Started server process [[36m308474[0m]
+[32mINFO[0m:     [31-12-2024 11:24:09] Waiting for application startup.
+[32mINFO[0m:     [31-12-2024 11:24:09] Application startup complete.
+[32mINFO[0m:     [31-12-2024 11:24:09] Uvicorn running on [1mhttp://localhost:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     [31-12-2024 11:24:13] 127.0.0.1:35734 - "GET /api/v2/auth/identity HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:24:13] 127.0.0.1:35742 - "GET /api/v2/tenants/default_tenant HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:24:13] 127.0.0.1:35742 - "GET /api/v2/tenants/default_tenant/databases/default_database HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 11:24:13] Collection ragnar already exists, returning existing collection.
+[32mINFO[0m:     [31-12-2024 11:24:13] 127.0.0.1:35734 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections HTTP/1.1" 200
+[36mDEBUG[0m:    [31-12-2024 11:24:23] Starting component PersistentLocalHnswSegment
+[32mINFO[0m:     [31-12-2024 11:24:23] 127.0.0.1:44432 - "POST /api/v2/tenants/default_tenant/databases/default_database/collections/16096865-30bb-4f51-8906-cd8cda2455c6/query HTTP/1.1" 200
+[32mINFO[0m:     [31-12-2024 11:24:58] Shutting down
+[32mINFO[0m:     [31-12-2024 11:24:58] Waiting for application shutdown.
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component System
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component SegmentAPI
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component LocalExecutor
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component PersistentLocalHnswSegment
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component LocalSegmentManager
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component SimpleRateLimitEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component Posthog
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component SimpleQuotaEnforcer
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component SqliteDB
+[36mDEBUG[0m:    [31-12-2024 11:24:58] Stopping component OpenTelemetryClient
+[32mINFO[0m:     [31-12-2024 11:24:58] Application shutdown complete.
+[32mINFO[0m:     [31-12-2024 11:24:58] Finished server process [[36m308474[0m]

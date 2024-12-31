@@ -7,8 +7,11 @@ from backend.rag_engine import RagEngine
 
 def main():
 
+    # print(f"OLLAMA HOST: {os.environ['OLLAMA_HOST']}")
     rag_engine = RagEngine()
 
+
+    print('\n')
     print('Welcome! Type "exit" to quit.')
     while True:
         print('')
@@ -16,13 +19,15 @@ def main():
         if user_input.lower() == 'exit':
             break
 
-        response = rag_engine.stream_response(user_message=user_input)
+        response = rag_engine.get_response(user_message=user_input)
         print(f'Ragnar ({settings.MODEL}): ', end='')
+
+
         chunk_id = 0
-        for chunk in response:
-            print(chunk.content, end='')
+        for chunk in response.split():
+            print(chunk, end=' ')
             chunk_id += 1
-            if chunk_id % 50 == 0:
+            if chunk.endswith('.'):
                 print('')
             time.sleep(0.05)
 

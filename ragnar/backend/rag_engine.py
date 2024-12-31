@@ -1,13 +1,12 @@
-import os
-
-from langchain_ollama import ChatOllama, OllamaEmbeddings
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.vectorstores import InMemoryVectorStore
+import chromadb
+from langchain_chroma import Chroma
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_community.embeddings import GPT4AllEmbeddings
 from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing_extensions import List, TypedDict
 
-from ragnar.config import settings
+from ragnar.backend.rag import RAG
 
 
 # Define state for application
@@ -20,68 +19,37 @@ class State(TypedDict):
 class RagEngine:
     def __init__(self):
 
-        self.model = ChatOllama(model=settings.MODEL, temperature=0.1)
         self.history = []
 
-        self.system_message = (
-            "System: This is a chat between a user and an artificial intelligence assistant. "
-            "The assistant gives helpful, detailed, and polite answers to the user's questions based on the context. "
-            "The assistant should also indicate when the answer cannot be found in the context. "
-            "The assistant is named Ragnar."
+        self.vector_store = Chroma(
+            collection_name='ragnar',
+            embedding_function=GPT4AllEmbeddings(),
+            client=chromadb.HttpClient(host='localhost', port=8000),
         )
-
-        self.instruction = "Please give a full and complete answer for the question."
-
-        #######
-        loader = PyPDFLoader(os.path.join(settings.INPUT_FOLDER, 'Syria-short.pdf'))
-        docs = loader.load()
-
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200, add_start_index=True)
-        all_splits = text_splitter.split_documents(docs)
-
-        embeddings = OllamaEmbeddings(model=settings.MODEL)
-        self.vector_store = InMemoryVectorStore(embeddings)
-        _ = self.vector_store.add_documents(documents=all_splits)
 
         retriever = self.vector_store.as_retriever(
             search_type="similarity",
-            search_kwargs={"k": 1},
+            search_kwargs={"k": 5},
         )
 
+        self.rag = RAG(retriever=retriever)
 
         dummy = -32
 
+    def insert_web_doc_to_db(self, url: str):
+        doc = WebBaseLoader(url).load()
+        docs_list = [item for item in doc]
 
-    def get_formatted_input(self, context:str = None):
+        # Initialize a text splitter with specified chunk size and overlap
+        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=500, chunk_overlap=100)
 
-        conversation = '\n\n'.join(
-            ["User: " + item["content"] if item["role"] == "user" else "Assistant: " + item["content"]
-             for item in self.history]
-        ) + "\n\nAssistant:"
+        # Split the documents into chunks
+        doc_splits = text_splitter.split_documents(docs_list)
+        self.vector_store.add_documents(documents=doc_splits)
 
-        formatted_input = (
-            self.system_message + "\n\n" + context + "\n\n" + conversation if context is not None
-            else self.system_message + "\n\n" + conversation
-        )
 
-        return formatted_input
-
-    def stream_response(self, user_message: str):
-        content = user_message if len(self.history) > 0 else self.instruction + ' ' + user_message
-        self.history.append({"role": "user", "content": content})
-
-        retrieved_docs = self.retrieve(query=user_message)
-        context = "\n\n".join(doc.page_content for doc in retrieved_docs)
-
-        formatted_input = self.get_formatted_input(context=context)
-        response = self.model.stream(formatted_input)
-        content = ''
-        for chunk in response:
-            content += chunk.content
-            yield chunk
-
-        self.history.append({"role": "assistant", "content": content})
-
-    def retrieve(self, query: str) -> list[Document]:
-        retrieved_docs = self.vector_store.similarity_search(query)
-        return retrieved_docs
+    def get_response(self, user_message: str):
+        self.history.append({"role": "user", "content": user_message})
+        response = self.rag.get_response(question=user_message)
+        self.history.append({"role": "assistant", "content": response})
+        return response
