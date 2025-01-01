@@ -2,6 +2,8 @@ from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
+from ragnar.config import settings
+
 prompt = PromptTemplate(
     template="""You are a teacher grading a quiz. You will be given: 
     1/ a QUESTION
@@ -26,7 +28,7 @@ prompt = PromptTemplate(
 )
 
 def get_retrieval_grader(model_name: str):
-    llm = ChatOllama(model=model_name, format="json", temperature=0)
+    llm = ChatOllama(model=model_name, format="json", temperature=0, base_url=settings.OLLAMA_URL)
     retrieval_grader = prompt | llm | JsonOutputParser()
     return retrieval_grader
 

@@ -29,7 +29,7 @@ if __name__ == '__main__':
             st.markdown(user_message)
 
         # Display assistant response in chat message container
-        response = rag_engine.get_response(user_message=user_message)
+        response = rag_engine.stream_response(user_message=user_message)
         with st.chat_message("assistant"):
             result = st.write_stream(response)  ##
         st.session_state.messages.append({"role": "assistant", "content": result})

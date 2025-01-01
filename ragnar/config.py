@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     INPUT_FOLDER: str
     OUT_FOLDER: str
     MODEL: str
+    OLLAMA_URL: str
 
     class Config:
         case_sensitive = True

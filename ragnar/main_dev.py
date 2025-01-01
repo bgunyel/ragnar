@@ -22,11 +22,8 @@ def main():
         response = rag_engine.get_response(user_message=user_input)
         print(f'Ragnar ({settings.MODEL}): ', end='')
 
-
-        chunk_id = 0
         for chunk in response.split():
             print(chunk, end=' ')
-            chunk_id += 1
             if chunk.endswith('.'):
                 print('')
             time.sleep(0.05)

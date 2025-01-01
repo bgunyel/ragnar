@@ -2,6 +2,8 @@ from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
 
+from ragnar.config import settings
+
 prompt = PromptTemplate(
     template="""You are an assistant for question-answering tasks. 
 
@@ -18,7 +20,7 @@ prompt = PromptTemplate(
 )
 
 def get_rag_generator(model_name: str):
-    llm = ChatOllama(model=model_name, temperature=0)
+    llm = ChatOllama(model=model_name, temperature=0, base_url=settings.OLLAMA_URL)
     rag_chain = prompt | llm | StrOutputParser()
     return rag_chain
 

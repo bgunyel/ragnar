@@ -1,3 +1,5 @@
+import time
+
 import chromadb
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import WebBaseLoader
@@ -6,6 +8,8 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from typing_extensions import List, TypedDict
 
+from ragnar.config import settings
+from ragnar.backend.utils import check_and_pull_ollama_model
 from ragnar.backend.rag import RAG
 
 
@@ -18,6 +22,8 @@ class State(TypedDict):
 
 class RagEngine:
     def __init__(self):
+
+        check_and_pull_ollama_model(model_name=settings.MODEL, ollama_url=f'{settings.OLLAMA_URL}')
 
         self.history = []
 
@@ -53,3 +59,11 @@ class RagEngine:
         response = self.rag.get_response(question=user_message)
         self.history.append({"role": "assistant", "content": response})
         return response
+
+    def stream_response(self, user_message: str):
+        response = self.get_response(user_message=user_message)
+
+        for chunk in response.split():
+            chunk += ' '
+            yield chunk
+            time.sleep(0.05)

@@ -5,3 +5,4 @@ input/
 out/
 docs/
 .ipynb_checkpoints/
+chroma.log

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ragnar"
 version = "0.1.0"
-description = "Ragnar"
+description = "Retrieval Augmented Generation based kNowledge AdviseR"
 authors = ["Bertan Günyel <bertan.gunyel@gmail.com>"]
 readme = "README.md"
 
@@ -21,6 +21,7 @@ chromadb = "^0.5.23"
 langchain-chroma = "^0.1.4"
 gpt4all = "^2.8.2"
 tiktoken = "^0.8.0"
+tqdm = "^4.67.1"
 
 [build-system]
 requires = ["poetry-core"]
