@@ -7,6 +7,7 @@ from langchain_community.embeddings import GPT4AllEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from ragnar.backend.models.base_rag import BaseRAG
+from ragnar.backend.models.feedback_base_rag import FeedbackBaseRAG
 from ragnar.backend.utils import check_and_pull_ollama_model
 from ragnar.config import settings
 
@@ -29,7 +30,8 @@ class RagEngine:
             search_kwargs={"k": 5},
         )
 
-        self.rag = BaseRAG(retriever=retriever)
+        self.rag = BaseRAG(retriever=retriever).build_graph()
+        self.rag_2 = FeedbackBaseRAG(retriever=retriever).build_graph()
 
 
     def insert_web_doc_to_db(self, url: str):
