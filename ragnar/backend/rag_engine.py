@@ -4,20 +4,11 @@ import chromadb
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.embeddings import GPT4AllEmbeddings
-from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from typing_extensions import List, TypedDict
 
-from ragnar.config import settings
+from ragnar.backend.models.base_rag import BaseRAG
 from ragnar.backend.utils import check_and_pull_ollama_model
-from ragnar.backend.rag import RAG
-
-
-# Define state for application
-class State(TypedDict):
-    question: str
-    context: List[Document]
-    answer: str
+from ragnar.config import settings
 
 
 class RagEngine:
@@ -38,9 +29,8 @@ class RagEngine:
             search_kwargs={"k": 5},
         )
 
-        self.rag = RAG(retriever=retriever)
+        self.rag = BaseRAG(retriever=retriever)
 
-        dummy = -32
 
     def insert_web_doc_to_db(self, url: str):
         doc = WebBaseLoader(url).load()

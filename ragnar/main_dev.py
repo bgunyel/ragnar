@@ -1,9 +1,9 @@
-import os
-import time
 import datetime
+import time
 
-from config import settings
 from backend.rag_engine import RagEngine
+from config import settings
+
 
 def main():
 

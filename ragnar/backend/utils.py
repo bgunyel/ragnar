@@ -3,10 +3,11 @@ from tqdm import tqdm
 
 
 def check_and_pull_ollama_model(model_name: str, ollama_url: str) -> None:
-    ollama_client = Client(host=f'{ollama_url}')
+    ollama_client = Client(host=ollama_url)
     response: ListResponse = ollama_client.list()
     available_model_names = [x.model for x in response.models]
 
+    # Modified from https://github.com/ollama/ollama-python/blob/main/examples/pull.py
     if model_name not in available_model_names:
         current_digest, bars = '', {}
         for progress in ollama_client.pull(model=model_name, stream=True):

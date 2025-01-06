@@ -19,7 +19,7 @@ prompt = PromptTemplate(
     input_variables=["question", "documents"],
 )
 
-def get_rag_generator(model_name: str):
+def get_answer_generator(model_name: str):
     llm = ChatOllama(model=model_name, temperature=0, base_url=settings.OLLAMA_URL)
     rag_chain = prompt | llm | StrOutputParser()
     return rag_chain
