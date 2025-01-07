@@ -9,6 +9,10 @@ def main():
 
     # print(f"OLLAMA HOST: {os.environ['OLLAMA_HOST']}")
     rag_engine = RagEngine()
+    # rag_engine.insert_web_doc_to_db(url='https://en.wikipedia.org/wiki/Syria')
+    # rag_engine.insert_web_doc_to_db(url='https://en.wikipedia.org/wiki/Syrian_civil_war')
+    # rag_engine.insert_web_doc_to_db(url='https://en.wikipedia.org/wiki/Fall_of_the_Assad_regime')
+    # rag_engine.insert_web_doc_to_db(url='https://en.wikipedia.org/wiki/President_of_Syria')
 
 
     print('\n')

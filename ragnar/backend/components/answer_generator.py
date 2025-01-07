@@ -1,3 +1,4 @@
+from typing import TypedDict
 from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
@@ -13,7 +14,9 @@ prompt = PromptTemplate(
 
     Use three sentences maximum and keep the answer concise:
     Question: {question} 
-    Documents: {documents} 
+    
+    Documents: {documents}
+     
     Answer: 
     """,
     input_variables=["question", "documents"],
@@ -24,8 +27,23 @@ def get_answer_generator(model_name: str):
     rag_chain = prompt | llm | StrOutputParser()
     return rag_chain
 
-"""
-# Test
-generation = rag_chain.invoke({"documents": docs, "question": question})
-print(generation)
-"""
+
+class AnswerGenerator:
+    def __init__(self, model_name: str):
+        self.rag_generator = get_answer_generator(model_name=model_name)
+
+    def run(self, state: TypedDict) -> TypedDict:
+        """
+        Generate answer
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            state (dict): New key added to state, generation, that contains LLM generation
+        """
+
+        context = "\n\n".join(doc.page_content for doc in state['good_documents'])
+        state['generation'] = self.rag_generator.invoke({'documents': context, 'question': state['original_question']})
+        state['steps'].append("generate_answer")
+        return state

@@ -30,8 +30,10 @@ class RagEngine:
             search_kwargs={"k": 5},
         )
 
-        self.rag = BaseRAG(retriever=retriever).build_graph()
-        self.rag_2 = FeedbackBaseRAG(retriever=retriever).build_graph()
+        # self.rag = BaseRAG(retriever=retriever)
+        self.rag = FeedbackBaseRAG(retriever=retriever)
+
+        dummy = -43
 
 
     def insert_web_doc_to_db(self, url: str):

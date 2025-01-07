@@ -1,8 +1,11 @@
+from typing import TypedDict
+
 from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
+from ragnar.backend.models.enums import Nodes, Grades
 
 prompt = PromptTemplate(
     template="""You are a teacher grading a quiz. You will be given: 
@@ -32,10 +35,36 @@ def get_retrieval_grader(model_name: str):
     retrieval_grader = prompt | llm | JsonOutputParser()
     return retrieval_grader
 
-"""
-# TEST: 
-question = "agent memory"
-docs = retriever.invoke(question)
-doc_txt = docs[1].page_content
-print(retrieval_grader.invoke({"question": question, "documents": doc_txt}))
-"""
+
+class RetrievalGrader:
+    def __init__(self, model_name: str):
+        self.retrieval_grader = get_retrieval_grader(model_name=model_name)
+
+    def run(self, state: TypedDict) -> TypedDict:
+        """
+        Determines whether the retrieved documents are relevant to the question.
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            state (dict): Updates documents key with only filtered relevant documents
+        """
+
+        state["steps"].append("grade_document_retrieval")
+
+        if len(state["documents"]) > 0:
+            state['documents_grade'] = Grades.GOOD.value
+
+            for d in state['documents']:
+                score = self.retrieval_grader.invoke({"question": state['question'], "documents": d.page_content})
+                grade = score["score"]
+                if grade == "yes":
+                    state['good_documents'].append(d)
+                else:
+                    state['documents_grade'] = Grades.BAD.value
+                    continue
+        else:
+            state['documents_grade'] = Grades.BAD.value
+
+        return state

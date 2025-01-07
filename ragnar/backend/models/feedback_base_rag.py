@@ -1,22 +1,21 @@
-from enum import Enum
 from typing import TypedDict
 from uuid import uuid4
+from pprint import pprint
 
-from PIL import Image
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStoreRetriever
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
-from ragnar.backend.models.base_rag import BaseRAG, GraphState
-from ragnar.backend.models.enums import Nodes
-from ragnar.backend.components.answer_generator import get_answer_generator
-from ragnar.backend.components.retrieval_grader import get_retrieval_grader
-from ragnar.backend.components.question_rewriter import get_question_rewriter
+from ragnar.backend.components.answer_generator import AnswerGenerator
+from ragnar.backend.components.question_rewriter import QuestionRewriter
+from ragnar.backend.components.retrieval_grader import RetrievalGrader
+from ragnar.backend.components.retriever import Retriever
+from ragnar.backend.models.enums import Nodes, Grades, States
 from ragnar.config import settings
 
 
-class State(GraphState):
+class GraphState(TypedDict):
     """
     Represents the state of our graph.
 
@@ -33,51 +32,63 @@ class State(GraphState):
     documents_grade: str
     steps: list[str]
     iteration: int
+    good_documents: list[Document]
+    original_question: str
 
 
-class FeedbackBaseRAG(BaseRAG):
+class FeedbackBaseRAG:
     def __init__(self, retriever: VectorStoreRetriever):
-        super().__init__(retriever=retriever)
-        self.retrieval_grader = get_retrieval_grader(model_name=settings.MODEL)
-        self.question_rewriter = get_question_rewriter(model_name=settings.MODEL)
+
+        self.K = retriever.search_kwargs['k'] # store the K parameter
+        self.retriever = Retriever(retriever=retriever)
+        self.retrieval_grader = RetrievalGrader(model_name=settings.MODEL)
+        self.question_rewriter = QuestionRewriter(model_name=settings.MODEL)
+        self.answer_generator = AnswerGenerator(model_name=settings.MODEL)
+        self.graph = self.build_graph()
 
     def get_response(self, question: str) -> str:
+
+        ##
+        for output in self.graph.stream({
+            "question": question,
+            'original_question': question,
+            'documents': [],
+            'good_documents': [],
+            'generation': '',
+            'documents_grade': '',
+            "steps": [],
+            "iteration": 0,
+        }):
+            for key, value in output.items():
+                # Node
+                pprint(f"Node '{key}':")
+                # Optional: print full state at each node
+                pprint(value, indent=2, width=80, depth=None)
+            pprint("\n---\n")
+
+        ##
+
+
         config = {"configurable": {"thread_id": str(uuid4())}}
-        state_dict = self.graph.invoke({"question": question, "steps": []}, config)
+        state_dict = self.graph.invoke(
+            {
+                "question": question,
+                'original_question': question,
+                'documents': [],
+                'good_documents': [],
+                'generation': '',
+                'documents_grade': '',
+                "steps": [],
+                "iteration": 0,
+            }, config
+        )
+
+
+
         return state_dict["generation"]
 
-    def grade_documents(self, state: GraphState) -> GraphState:
-        """
-        Determines whether the retrieved documents are relevant to the question.
-
-        Args:
-            state (dict): The current graph state
-
-        Returns:
-            state (dict): Updates documents key with only filtered relevant documents
-        """
-
-        state["steps"].append("grade_document_retrieval")
-        filtered_docs = []
-        state['documents_grade'] = 'Good'
-
-        for d in state['documents']:
-            score = self.retrieval_grader.invoke({"question": state['question'], "documents": d.page_content})
-            grade = score["score"]
-            if grade == "yes":
-                filtered_docs.append(d)
-            else:
-                state['documents_grade'] = "Bad"
-                continue
-
-        state['documents'] = filtered_docs
-        return state
-
-
-    def rewrite_question(self, state: GraphState) -> GraphState:
-        # Re-write question
-        new_question = self.question_rewriter.invoke({"question": state['question']})
-        state['question'] = new_question
+    def increment_iteration(self, state: GraphState):
+        state["iteration"] += 1
         return state
 
     def decide_to_generate(self, state: GraphState) -> str:
@@ -91,13 +102,10 @@ class FeedbackBaseRAG(BaseRAG):
             str: Binary decision for next node to call
         """
 
-        if state['documents_grade'] == 'Good':
+        if (state['iteration'] > 3) or (len(state['good_documents']) >= self.K):
             out = Nodes.GENERATE.value
-        elif state['iteration'] < 3:
-            out = Nodes.REWRITE_QUESTION.value
-            state['iteration'] += 1
         else:
-            out = Nodes.GENERATE.value
+            out = Nodes.REWRITE_QUESTION.value
 
         return out
 
@@ -107,14 +115,16 @@ class FeedbackBaseRAG(BaseRAG):
         workflow = StateGraph(GraphState)
 
         # Nodes
-        workflow.add_node(node=Nodes.RETRIEVE.value, action=self.retrieve)
-        workflow.add_node(node=Nodes.GRADE_DOCS.value, action=self.grade_documents)
-        workflow.add_node(node=Nodes.REWRITE_QUESTION.value, action=self.rewrite_question)
-        workflow.add_node(node=Nodes.GENERATE.value, action=self.generate)
+        workflow.add_node(node=Nodes.RETRIEVE.value, action=self.retriever.run)
+        workflow.add_node(node=Nodes.GRADE_DOCS.value, action=self.retrieval_grader.run)
+        workflow.add_node(node=Nodes.REWRITE_QUESTION.value, action=self.question_rewriter.run)
+        workflow.add_node(node=Nodes.INCREMENT_ITERATION.value, action=self.increment_iteration)
+        workflow.add_node(node=Nodes.GENERATE.value, action=self.answer_generator.run)
 
         # Edges
         workflow.add_edge(start_key=START, end_key=Nodes.RETRIEVE.value)
-        workflow.add_edge(start_key=Nodes.RETRIEVE.value, end_key=Nodes.GRADE_DOCS.value)
+        workflow.add_edge(start_key=Nodes.RETRIEVE.value, end_key=Nodes.INCREMENT_ITERATION.value)
+        workflow.add_edge(start_key=Nodes.INCREMENT_ITERATION.value, end_key=Nodes.GRADE_DOCS.value)
         workflow.add_conditional_edges(
             source=Nodes.GRADE_DOCS.value,
             path=self.decide_to_generate,
@@ -125,4 +135,3 @@ class FeedbackBaseRAG(BaseRAG):
 
         compiled_graph = workflow.compile()
         return compiled_graph
-
