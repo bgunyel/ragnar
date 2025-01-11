@@ -11,7 +11,7 @@ from ragnar.backend.components.answer_generator import AnswerGenerator
 from ragnar.backend.components.question_rewriter import QuestionRewriter
 from ragnar.backend.components.retrieval_grader import RetrievalGrader
 from ragnar.backend.components.retriever import Retriever
-from ragnar.backend.models.enums import Nodes, Grades, States
+from ragnar.backend.models.enums import Nodes
 from ragnar.config import settings
 
 
@@ -46,29 +46,27 @@ class FeedbackBaseRAG:
         self.answer_generator = AnswerGenerator(model_name=settings.MODEL)
         self.graph = self.build_graph()
 
-    def get_response(self, question: str) -> str:
+    def get_response(self, question: str, verbose: bool = False) -> str:
+
+        if verbose:
+            for output in self.graph.stream({
+                "question": question,
+                'original_question': question,
+                'documents': [],
+                'good_documents': [],
+                'generation': '',
+                'documents_grade': '',
+                "steps": [],
+                "iteration": 0,
+            }):
+                for key, value in output.items():
+                    # Node
+                    pprint(f"Node '{key}':")
+                    # Optional: print full state at each node
+                    pprint(value, indent=2, width=80, depth=None)
+                pprint("\n---\n")
 
         ##
-        for output in self.graph.stream({
-            "question": question,
-            'original_question': question,
-            'documents': [],
-            'good_documents': [],
-            'generation': '',
-            'documents_grade': '',
-            "steps": [],
-            "iteration": 0,
-        }):
-            for key, value in output.items():
-                # Node
-                pprint(f"Node '{key}':")
-                # Optional: print full state at each node
-                pprint(value, indent=2, width=80, depth=None)
-            pprint("\n---\n")
-
-        ##
-
-
         config = {"configurable": {"thread_id": str(uuid4())}}
         state_dict = self.graph.invoke(
             {
@@ -82,9 +80,6 @@ class FeedbackBaseRAG:
                 "iteration": 0,
             }, config
         )
-
-
-
         return state_dict["generation"]
 
     def increment_iteration(self, state: GraphState):

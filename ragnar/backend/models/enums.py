@@ -19,3 +19,6 @@ class States(Enum):
     DOCUMENTS_GRADE = 'documents_grade'
     STEPS = "steps"
     ITERATION = "iteration"
+    ANSWER_GROUNDED = "answer_grounded"
+    ANSWER_USEFUL = "answer_useful"
+
