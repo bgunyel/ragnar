@@ -11,6 +11,7 @@ from ragnar.backend.components.answer_generator import AnswerGenerator
 from ragnar.backend.components.question_rewriter import QuestionRewriter
 from ragnar.backend.components.retrieval_grader import RetrievalGrader
 from ragnar.backend.components.retriever import Retriever
+from ragnar.backend.components.utility_components import increment_iteration
 from ragnar.backend.models.enums import Nodes
 from ragnar.config import settings
 
@@ -82,10 +83,6 @@ class FeedbackBaseRAG:
         )
         return state_dict["generation"]
 
-    def increment_iteration(self, state: GraphState):
-        state["iteration"] += 1
-        return state
-
     def decide_to_generate(self, state: GraphState) -> str:
         """
         Determines whether to generate an answer, or re-generate a question.
@@ -98,7 +95,7 @@ class FeedbackBaseRAG:
         """
 
         if (state['iteration'] > 3) or (len(state['good_documents']) >= self.K):
-            out = Nodes.GENERATE.value
+            out = Nodes.ANSWER_GENERATOR.value
         else:
             out = Nodes.REWRITE_QUESTION.value
 
@@ -111,22 +108,22 @@ class FeedbackBaseRAG:
 
         # Nodes
         workflow.add_node(node=Nodes.RETRIEVE.value, action=self.retriever.run)
-        workflow.add_node(node=Nodes.GRADE_DOCS.value, action=self.retrieval_grader.run)
+        workflow.add_node(node=Nodes.DOCUMENT_GRADER.value, action=self.retrieval_grader.run)
         workflow.add_node(node=Nodes.REWRITE_QUESTION.value, action=self.question_rewriter.run)
-        workflow.add_node(node=Nodes.INCREMENT_ITERATION.value, action=self.increment_iteration)
-        workflow.add_node(node=Nodes.GENERATE.value, action=self.answer_generator.run)
+        workflow.add_node(node=Nodes.INCREMENT_ITERATION.value, action=increment_iteration)
+        workflow.add_node(node=Nodes.ANSWER_GENERATOR.value, action=self.answer_generator.run)
 
         # Edges
         workflow.add_edge(start_key=START, end_key=Nodes.RETRIEVE.value)
         workflow.add_edge(start_key=Nodes.RETRIEVE.value, end_key=Nodes.INCREMENT_ITERATION.value)
-        workflow.add_edge(start_key=Nodes.INCREMENT_ITERATION.value, end_key=Nodes.GRADE_DOCS.value)
+        workflow.add_edge(start_key=Nodes.INCREMENT_ITERATION.value, end_key=Nodes.DOCUMENT_GRADER.value)
         workflow.add_conditional_edges(
-            source=Nodes.GRADE_DOCS.value,
+            source=Nodes.DOCUMENT_GRADER.value,
             path=self.decide_to_generate,
         )
 
         workflow.add_edge(start_key=Nodes.REWRITE_QUESTION.value, end_key=Nodes.RETRIEVE.value)
-        workflow.add_edge(start_key=Nodes.GENERATE.value, end_key=END)
+        workflow.add_edge(start_key=Nodes.ANSWER_GENERATOR.value, end_key=END)
 
         compiled_graph = workflow.compile()
         return compiled_graph

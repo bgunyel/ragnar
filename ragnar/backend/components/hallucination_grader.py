@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.models.enums import States
+from ragnar.backend.enums import StateField
 
 
 prompt = PromptTemplate(
@@ -43,5 +43,5 @@ class HallucinationGrader:
          """
 
         score = self.hallucination_grader.invoke({"documents": state["documents"], "generation": state["generation"]})
-        state[States.ANSWER_GROUNDED] = score["score"]
+        state[StateField.ANSWER_GROUNDED] = score["score"]
         return state

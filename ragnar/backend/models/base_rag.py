@@ -82,12 +82,12 @@ class BaseRAG:
 
         # Nodes
         workflow.add_node(node=Nodes.RETRIEVE.value, action=self.retriever.run)
-        workflow.add_node(node=Nodes.GENERATE.value, action=self.answer_generator.run)
+        workflow.add_node(node=Nodes.ANSWER_GENERATOR.value, action=self.answer_generator.run)
 
         # Edges
         workflow.add_edge(start_key=START, end_key=Nodes.RETRIEVE.value)
-        workflow.add_edge(start_key=Nodes.RETRIEVE.value, end_key=Nodes.GENERATE.value)
-        workflow.add_edge(start_key=Nodes.GENERATE.value, end_key=END)
+        workflow.add_edge(start_key=Nodes.RETRIEVE.value, end_key=Nodes.ANSWER_GENERATOR.value)
+        workflow.add_edge(start_key=Nodes.ANSWER_GENERATOR.value, end_key=END)
 
         compiled_graph = workflow.compile()
         return compiled_graph

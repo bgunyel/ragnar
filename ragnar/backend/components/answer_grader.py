@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.models.enums import States
+from ragnar.backend.enums import StateField
 
 
 prompt = PromptTemplate(
@@ -42,5 +42,5 @@ class AnswerGrader:
             state (dict): Updated graph state
         """
         score = self.answer_grader.invoke({"question": state["question"], "generation": state["generation"]})
-        state[States.ANSWER_USEFUL] = score["score"]
+        state[StateField.ANSWER_USEFUL] = score["score"]
         return state

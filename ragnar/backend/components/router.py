@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.models.enums import Nodes, Grades
+from ragnar.backend.enums import StateField
 
 
 prompt = PromptTemplate(
@@ -36,7 +36,7 @@ class Router:
     def __init__(self, model_name: str):
         self.router = get_router(model_name=model_name)
 
-    def run(self, state: TypedDict) -> str:
+    def run(self, state: TypedDict) -> TypedDict:
         """
         Routes the query according to question
 
@@ -48,4 +48,5 @@ class Router:
         """
 
         out = self.router.invode({'question': state['question']})
-        return out['datasource']
+        state[StateField.DATA_SOURCE.value] = out['datasource']
+        return state
