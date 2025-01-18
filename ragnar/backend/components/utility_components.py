@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Literal
 from langgraph.graph import END
 
 from ragnar.backend.enums import Node, StateField
@@ -9,7 +9,7 @@ def increment_iteration(state: TypedDict) -> TypedDict:
     return state
 
 
-def are_documents_relevant(state: TypedDict, max_iteration: int, number_of_documents: int) -> str:
+def are_documents_relevant(state: TypedDict, max_iteration: int, number_of_documents: int) -> Literal['relevant', 'not relevant', 'max_iter']:
     """
     Determines whether to generate an answer, or re-generate a question.
 
@@ -22,39 +22,35 @@ def are_documents_relevant(state: TypedDict, max_iteration: int, number_of_docum
         str: Binary decision for next node to call
     """
 
-    if (state[StateField.ITERATION.value] > max_iteration) or (len(state[StateField.GOOD_DOCUMENTS.value]) >= number_of_documents):
-        out = Node.ANSWER_GENERATOR.value
+    if state[StateField.ITERATION.value] > max_iteration:
+        return 'max_iter'
+    elif len(state[StateField.GOOD_DOCUMENTS.value]) >= number_of_documents:
+        return 'relevant'
     else:
-        out = Node.REWRITE_QUESTION.value
-
-    return out
+        return 'not relevant'
 
 
-def is_answer_grounded(state: TypedDict) -> str:
+def is_answer_grounded(state: TypedDict) -> Literal['grounded', 'not grounded']:
 
     if state[StateField.ANSWER_GROUNDED.value] == 'yes':
-        out = Node.ANSWER_GRADER.value
+        return 'grounded'
     elif state[StateField.ANSWER_GROUNDED.value] == 'no':
-        out = Node.ANSWER_GENERATOR.value
+        return 'not grounded'
     else:
         raise RuntimeError(
             (f'Unknown state from hallucination grader --> '
             f'state[{StateField.ANSWER_GROUNDED.value}]: {state[StateField.ANSWER_GROUNDED.value]}')
         )
 
-    return out
 
-
-def is_answer_useful(state: TypedDict) -> str:
+def is_answer_useful(state: TypedDict) -> Literal['useful', 'not useful']:
 
     if state[StateField.ANSWER_USEFUL.value] == 'yes':
-        out = END
+        return 'useful'
     elif state[StateField.ANSWER_USEFUL.value] == 'no':
-        out = Node.REWRITE_QUESTION.value
+        return 'not useful'
     else:
         raise RuntimeError(
             (f'Unknown state from answer grader --> '
             f'state[{StateField.ANSWER_USEFUL.value}]: {state[StateField.ANSWER_USEFUL.value]}')
         )
-
-    return out

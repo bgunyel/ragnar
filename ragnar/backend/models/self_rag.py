@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Literal
 from uuid import uuid4
 from pprint import pprint
 
@@ -46,7 +46,7 @@ class GraphState(TypedDict):
     datasource: str
 
 
-def route_query(state: GraphState) -> str:
+def route_query(state: GraphState) -> Literal['vectorstore', 'internal']:
     """
     Determines the path after query routing
 
@@ -57,12 +57,10 @@ def route_query(state: GraphState) -> str:
         str: Binary decision for next node to call
     """
 
-    if state[StateField.DATA_SOURCE.value] == 'vectorstore':
-        out = Node.RETRIEVE.value
+    if state['datasource'] == 'vectorstore':
+        return 'vectorstore'
     else:
-        out = Node.INTERNAL_ANSWER_GENERATOR.value
-
-    return out
+        return 'internal'
 
 
 class SelfRAG:
@@ -85,15 +83,31 @@ class SelfRAG:
         self.answer_grader = AnswerGrader(model_name=settings.MODEL)
         self.graph = self.build_graph()
 
-    def get_response(self):
-        pass
+    def get_response(self, question: str, verbose: bool = False) -> str:
+        config = {"configurable": {"thread_id": str(uuid4())}}
+
+        state_dict = self.graph.invoke(
+            {
+                "question": question,
+                'original_question': question,
+                'documents': [],
+                'good_documents': [],
+                'generation': '',
+                'documents_grade': '',
+                "steps": [],
+                "iteration": 0,
+                'datasource': '',
+            }, config
+        )
+        return state_dict["generation"]
+
 
     def build_graph(self):
         workflow = StateGraph(GraphState)
 
         # Nodes
         workflow.add_node(node=Node.ROUTER.value, action=self.router.run)
-        workflow.add_node(node=Node.INTERNAL_ANSWER_GENERATOR.value, action=self.internal_answer_generator.run)
+        workflow.add_node(node='internal_answer_generator', action=self.internal_answer_generator.run)
         workflow.add_node(node=Node.RETRIEVE.value, action=self.retriever.run)
         workflow.add_node(node=Node.DOCUMENT_GRADER.value, action=self.retrieval_grader.run)
         workflow.add_node(node=Node.ANSWER_GENERATOR.value, action=self.answer_generator.run)
@@ -103,18 +117,47 @@ class SelfRAG:
         workflow.add_node(node=Node.INCREMENT_ITERATION.value, action=increment_iteration)
 
         # Edges
-        workflow.add_edge(start_key=START, end_key=Node.ROUTER.value)
-        workflow.add_conditional_edges(source=Node.ROUTER.value, path=route_query)
+        workflow.add_edge(start_key=START, end_key='router')
+        workflow.add_conditional_edges(
+            source='router',
+            path=route_query,
+            path_map={
+                'vectorstore': Node.RETRIEVE.value,
+                'internal': Node.INTERNAL_ANSWER_GENERATOR.value,
+            }
+        )
         workflow.add_edge(start_key=Node.INTERNAL_ANSWER_GENERATOR.value, end_key=END)
 
         workflow.add_edge(start_key=Node.RETRIEVE.value, end_key=Node.INCREMENT_ITERATION.value)
         workflow.add_edge(start_key=Node.INCREMENT_ITERATION.value, end_key=Node.DOCUMENT_GRADER.value)
-        workflow.add_conditional_edges(source=Node.DOCUMENT_GRADER.value, path=are_documents_relevant)
+        workflow.add_conditional_edges(
+            source=Node.DOCUMENT_GRADER.value,
+            path=are_documents_relevant,
+            path_map={
+                'relevant': Node.ANSWER_GENERATOR.value,
+                'not relevant': Node.REWRITE_QUESTION.value,
+                'max_iter':Node.ANSWER_GENERATOR.value
+            }
+        )
 
         workflow.add_edge(start_key=Node.REWRITE_QUESTION.value, end_key=Node.RETRIEVE.value)
         workflow.add_edge(start_key=Node.ANSWER_GENERATOR.value, end_key=Node.HALLUCINATION_GRADER.value)
-        workflow.add_conditional_edges(source=Node.HALLUCINATION_GRADER.value, path=is_answer_grounded)
-        workflow.add_conditional_edges(source=Node.ANSWER_GRADER.value, path=is_answer_useful)
+        workflow.add_conditional_edges(
+            source=Node.HALLUCINATION_GRADER.value,
+            path=is_answer_grounded,
+            path_map={
+                'grounded': Node.ANSWER_GRADER.value,
+                'not grounded': Node.ANSWER_GENERATOR.value,
+            }
+        )
+        workflow.add_conditional_edges(
+            source=Node.ANSWER_GRADER.value,
+            path=is_answer_useful,
+            path_map={
+                'useful': END,
+                'not useful': Node.REWRITE_QUESTION.value,
+            }
+        )
 
         compiled_graph = workflow.compile()
         return compiled_graph

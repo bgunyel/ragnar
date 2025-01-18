@@ -8,6 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from ragnar.backend.models.base_rag import BaseRAG
 from ragnar.backend.models.feedback_base_rag import FeedbackBaseRAG
+from ragnar.backend.models.self_rag import SelfRAG
 from ragnar.backend.utils import check_and_pull_ollama_model
 from ragnar.config import settings
 
@@ -31,7 +32,8 @@ class RagEngine:
         )
 
         # self.rag = BaseRAG(retriever=retriever)
-        self.rag = FeedbackBaseRAG(retriever=retriever)
+        # self.rag = FeedbackBaseRAG(retriever=retriever)
+        self.rag = SelfRAG(retriever=retriever)
 
         dummy = -43
 

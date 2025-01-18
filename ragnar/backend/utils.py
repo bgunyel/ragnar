@@ -1,3 +1,6 @@
+from io import BytesIO
+from PIL import Image
+
 from ollama import ListResponse, Client
 from tqdm import tqdm
 
@@ -26,3 +29,9 @@ def check_and_pull_ollama_model(model_name: str, ollama_url: str) -> None:
                 bars[digest].update(completed - bars[digest].n)
 
             current_digest = digest
+
+
+def get_flow_chart(rag_model):
+    img_bytes = BytesIO(rag_model.graph.get_graph(xray=True).draw_mermaid_png())
+    img = Image.open(img_bytes).convert("RGB")
+    return img

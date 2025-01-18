@@ -5,7 +5,7 @@ from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.models.enums import Nodes, Grades
+from ragnar.backend.enums import Grades
 
 prompt = PromptTemplate(
     template="""You are a teacher grading a quiz. You will be given: 

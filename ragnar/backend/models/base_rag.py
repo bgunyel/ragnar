@@ -1,9 +1,7 @@
-from io import BytesIO
 from typing import TypedDict
 from uuid import uuid4
 from pprint import pprint
 
-from PIL import Image
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStoreRetriever
 from langgraph.graph import START, END, StateGraph
@@ -11,7 +9,7 @@ from langgraph.graph.state import CompiledStateGraph
 
 from ragnar.backend.components.answer_generator import AnswerGenerator
 from ragnar.backend.components.retriever import Retriever
-from ragnar.backend.models.enums import Nodes
+from ragnar.backend.enums import Node
 from ragnar.config import settings
 
 
@@ -71,23 +69,18 @@ class BaseRAG:
         )
         return state_dict["generation"]
 
-    def get_flow_chart(self):
-        img_bytes = BytesIO(self.graph.get_graph(xray=True).draw_mermaid_png())
-        img = Image.open(img_bytes).convert("RGB")
-        return img
-
     def build_graph(self) -> CompiledStateGraph:
 
         workflow = StateGraph(GraphState)
 
         # Nodes
-        workflow.add_node(node=Nodes.RETRIEVE.value, action=self.retriever.run)
-        workflow.add_node(node=Nodes.ANSWER_GENERATOR.value, action=self.answer_generator.run)
+        workflow.add_node(node=Node.RETRIEVE.value, action=self.retriever.run)
+        workflow.add_node(node=Node.ANSWER_GENERATOR.value, action=self.answer_generator.run)
 
         # Edges
-        workflow.add_edge(start_key=START, end_key=Nodes.RETRIEVE.value)
-        workflow.add_edge(start_key=Nodes.RETRIEVE.value, end_key=Nodes.ANSWER_GENERATOR.value)
-        workflow.add_edge(start_key=Nodes.ANSWER_GENERATOR.value, end_key=END)
+        workflow.add_edge(start_key=START, end_key=Node.RETRIEVE.value)
+        workflow.add_edge(start_key=Node.RETRIEVE.value, end_key=Node.ANSWER_GENERATOR.value)
+        workflow.add_edge(start_key=Node.ANSWER_GENERATOR.value, end_key=END)
 
         compiled_graph = workflow.compile()
         return compiled_graph
