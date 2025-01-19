@@ -1,56 +1,65 @@
-from typing import TypedDict, Literal
-from langgraph.graph import END
+from typing import Literal
+from langchain_core.runnables import RunnableConfig
 
-from ragnar.backend.enums import Node, StateField
-
-
-def increment_iteration(state: TypedDict) -> TypedDict:
-    state[StateField.ITERATION.value] += 1
-    return state
+from ragnar.backend.state import GraphState
+from ragnar.backend.models_config import Configuration
+from ragnar.backend.enums import Node
 
 
-def are_documents_relevant(state: TypedDict, max_iteration: int, number_of_documents: int) -> Literal['relevant', 'not relevant', 'max_iter']:
+def are_documents_relevant(state: GraphState, config: RunnableConfig) -> Literal['relevant', 'not relevant', 'max_iter']:
     """
     Determines whether to generate an answer, or re-generate a question.
 
     Args:
-        state (dict): The current graph state
-        max_iteration (int): The maximum number of retrieval iterations
-        number_of_documents (int): The number of documents expected from the retriever
+        state: The current graph state
+        config (RunnableConfig): The configuration of the run
 
     Returns:
         str: Binary decision for next node to call
     """
 
-    if state[StateField.ITERATION.value] > max_iteration:
-        return 'max_iter'
-    elif len(state[StateField.GOOD_DOCUMENTS.value]) >= number_of_documents:
+    configurable = Configuration.from_runnable_config(config)
+
+    if len(state.good_documents) >= configurable.number_of_retrieved_documents:
         return 'relevant'
+    elif state.retrieval_iteration >= configurable.max_retrieval_iterations:
+        return 'max_iter'
     else:
         return 'not relevant'
 
 
-def is_answer_grounded(state: TypedDict) -> Literal['grounded', 'not grounded']:
+def is_answer_grounded(state: GraphState, config: RunnableConfig) -> Literal['grounded', 'not grounded', 'max_iter']:
+    configurable = Configuration.from_runnable_config(config)
 
-    if state[StateField.ANSWER_GROUNDED.value] == 'yes':
+    if state.answer_grounded == 'yes':
         return 'grounded'
-    elif state[StateField.ANSWER_GROUNDED.value] == 'no':
+    elif state.generation_iteration >= configurable.max_generation_iterations:
+        return 'max_iter'
+    elif state.answer_grounded == 'no':
         return 'not grounded'
     else:
         raise RuntimeError(
             (f'Unknown state from hallucination grader --> '
-            f'state[{StateField.ANSWER_GROUNDED.value}]: {state[StateField.ANSWER_GROUNDED.value]}')
+            f'state.answer_grounded: {state.answer_grounded}')
         )
 
 
-def is_answer_useful(state: TypedDict) -> Literal['useful', 'not useful']:
+def is_answer_useful(state: GraphState, config: RunnableConfig) -> Literal['useful', 'not useful', 'max_iter']:
+    configurable = Configuration.from_runnable_config(config)
 
-    if state[StateField.ANSWER_USEFUL.value] == 'yes':
+    if state.answer_useful == 'yes':
         return 'useful'
-    elif state[StateField.ANSWER_USEFUL.value] == 'no':
+    elif state.retrieval_iteration >= configurable.max_retrieval_iterations:
+        return 'max_iter'
+    elif state.answer_useful == 'no':
         return 'not useful'
     else:
         raise RuntimeError(
             (f'Unknown state from answer grader --> '
-            f'state[{StateField.ANSWER_USEFUL.value}]: {state[StateField.ANSWER_USEFUL.value]}')
+            f'state.answer_useful: {state.answer_useful}')
         )
+
+def reset_generation(state: GraphState) -> GraphState:
+    state.generation = 'I could not find the answer [reset generation]'
+    state.steps.append(Node.RESET.value)
+    return state

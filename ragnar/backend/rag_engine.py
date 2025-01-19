@@ -6,6 +6,7 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.embeddings import GPT4AllEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from ragnar.backend.models_config import Configuration
 from ragnar.backend.models.base_rag import BaseRAG
 from ragnar.backend.models.feedback_base_rag import FeedbackBaseRAG
 from ragnar.backend.models.self_rag import SelfRAG
@@ -17,6 +18,7 @@ class RagEngine:
     def __init__(self):
 
         check_and_pull_ollama_model(model_name=settings.MODEL, ollama_url=f'{settings.OLLAMA_URL}')
+        configuration = Configuration()
 
         self.history = []
 
@@ -28,7 +30,7 @@ class RagEngine:
 
         retriever = self.vector_store.as_retriever(
             search_type="similarity",
-            search_kwargs={"k": 5},
+            search_kwargs={"k": configuration.number_of_retrieved_documents},
         )
 
         # self.rag = BaseRAG(retriever=retriever)
@@ -52,7 +54,7 @@ class RagEngine:
 
     def get_response(self, user_message: str):
         self.history.append({"role": "user", "content": user_message})
-        response = self.rag.get_response(question=user_message)
+        response = self.rag.get_response(question=user_message, verbose=True)
         self.history.append({"role": "assistant", "content": response})
         return response
 

@@ -1,11 +1,10 @@
-from typing import TypedDict
-
 from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.enums import StateField
+from ragnar.backend.state import GraphState
+from ragnar.backend.enums import Node
 
 
 prompt = PromptTemplate(
@@ -31,7 +30,7 @@ class AnswerGrader:
     def __init__(self, model_name: str):
         self.answer_grader = get_answer_grader(model_name)
 
-    def run(self, state: TypedDict) -> TypedDict:
+    def run(self, state: GraphState) -> GraphState:
         """
         Determines whether the generated answer is useful to resolve a question.
 
@@ -41,6 +40,7 @@ class AnswerGrader:
         Returns:
             state (dict): Updated graph state
         """
-        score = self.answer_grader.invoke({"question": state["question"], "generation": state["generation"]})
-        state[StateField.ANSWER_USEFUL] = score["score"]
+        score = self.answer_grader.invoke({"question": state.question, "generation": state.generation})
+        state.answer_useful = score["score"]
+        state.steps.append(Node.ANSWER_GRADER.value)
         return state

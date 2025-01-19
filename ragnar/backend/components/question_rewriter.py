@@ -1,10 +1,10 @@
-from typing import TypedDict
-
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 
 from ragnar.config import settings
+from ragnar.backend.state import GraphState
+from ragnar.backend.enums import Node
 
 
 query_writer_instructions="""Your goal is to generate targeted web search query.
@@ -54,9 +54,9 @@ class QuestionRewriter:
     def __init__(self, model_name: str):
         self.question_rewriter = get_question_rewriter(model_name=model_name)
 
-    def run(self, state: TypedDict) -> TypedDict:
+    def run(self, state: GraphState) -> GraphState:
         # Re-write question
-        new_question = self.question_rewriter.invoke({"question": state['question']})
-        state['question'] = new_question['improved_question']
-        state["steps"].append("question_rewriter")
+        new_question = self.question_rewriter.invoke({"question": state.query})
+        state.query = new_question['improved_question']
+        state.steps.append(Node.REWRITE_QUESTION.value)
         return state

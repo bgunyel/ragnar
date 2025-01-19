@@ -1,11 +1,10 @@
-from typing import TypedDict
-
 from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.enums import StateField
+from ragnar.backend.state import GraphState
+from ragnar.backend.enums import Node
 
 
 prompt = PromptTemplate(
@@ -31,17 +30,18 @@ class HallucinationGrader:
     def __init__(self, model_name: str):
         self.hallucination_grader = get_hallucination_grader(model_name=model_name)
 
-    def run(self, state: TypedDict) -> TypedDict:
+    def run(self, state: GraphState) -> GraphState:
         """
          Determines whether the generated answer is grounded in / supported by the set documents.
 
          Args:
-             state (dict): The current graph state
+             state: The current graph state
 
          Returns:
-             state (dict):
+             state: The updated graph state
          """
 
-        score = self.hallucination_grader.invoke({"documents": state["documents"], "generation": state["generation"]})
-        state[StateField.ANSWER_GROUNDED] = score["score"]
+        score = self.hallucination_grader.invoke({"documents": state.documents, "generation": state.generation})
+        state.answer_grounded = score["score"]
+        state.steps.append(Node.HALLUCINATION_GRADER.value)
         return state

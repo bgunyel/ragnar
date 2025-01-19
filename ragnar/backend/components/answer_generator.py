@@ -1,9 +1,10 @@
-from typing import TypedDict
 from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import StrOutputParser
 
 from ragnar.config import settings
+from ragnar.backend.enums import Node
+from ragnar.backend.state import GraphState
 
 rag_prompt = PromptTemplate(
     template="""You are an assistant for question-answering tasks. 
@@ -61,7 +62,7 @@ class AnswerGenerator:
             self.generator = get_internal_answer_generator(model_name=model_name)
 
 
-    def run(self, state: TypedDict) -> TypedDict:
+    def run(self, state: GraphState) -> GraphState:
         """
         Generate answer
 
@@ -72,12 +73,14 @@ class AnswerGenerator:
             state (dict): New key added to state, generation, that contains LLM generation
         """
 
+        state.generation_iteration += 1
+
         if self.is_rag:
-            context = "\n\n".join(doc.page_content for doc in state['good_documents'])
-            state['generation'] = self.generator.invoke({'documents': context, 'question': state['original_question']})
-            state['steps'].append("answer_generation")
+            context = "\n\n".join(doc.page_content for doc in state.good_documents)
+            state.generation = self.generator.invoke({'documents': context, 'question': state.question})
+            state.steps.append(Node.ANSWER_GENERATOR.value)
         else:
-            state['generation'] = self.generator.invoke({'question': state['original_question']})
-            state['steps'].append("internal_answer_generation")
+            state.generation = self.generator.invoke({'question': state.question})
+            state.steps.append(Node.INTERNAL_ANSWER_GENERATOR.value)
 
         return state

@@ -23,8 +23,17 @@ def main():
         if user_input.lower() == 'exit':
             break
 
+        time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
+            tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
+        print(f'{time_now}\n')
+        print(f'Ragnar ({settings.MODEL}) ', end='')
+
         response = rag_engine.get_response(user_message=user_input)
-        print(f'Ragnar ({settings.MODEL}): ', end='')
+
+        time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
+            tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
+
+        print(f'({time_now}) ', end='')
 
         for chunk in response.split():
             print(chunk, end=' ')

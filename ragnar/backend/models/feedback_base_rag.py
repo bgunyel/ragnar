@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Literal
 from uuid import uuid4
 from pprint import pprint
 
@@ -11,7 +11,12 @@ from ragnar.backend.components.answer_generator import AnswerGenerator
 from ragnar.backend.components.question_rewriter import QuestionRewriter
 from ragnar.backend.components.retrieval_grader import RetrievalGrader
 from ragnar.backend.components.retriever import Retriever
-from ragnar.backend.components.utility_components import increment_iteration
+from ragnar.backend.components.utility_components import (
+    are_documents_relevant,
+    is_answer_grounded,
+    is_answer_useful,
+    reset_generation
+)
 from ragnar.backend.enums import Node
 from ragnar.config import settings
 
@@ -110,18 +115,20 @@ class FeedbackBaseRAG:
         workflow.add_node(node=Node.RETRIEVE.value, action=self.retriever.run)
         workflow.add_node(node=Node.DOCUMENT_GRADER.value, action=self.retrieval_grader.run)
         workflow.add_node(node=Node.REWRITE_QUESTION.value, action=self.question_rewriter.run)
-        workflow.add_node(node=Node.INCREMENT_ITERATION.value, action=increment_iteration)
         workflow.add_node(node=Node.ANSWER_GENERATOR.value, action=self.answer_generator.run)
 
         # Edges
         workflow.add_edge(start_key=START, end_key=Node.RETRIEVE.value)
-        workflow.add_edge(start_key=Node.RETRIEVE.value, end_key=Node.INCREMENT_ITERATION.value)
-        workflow.add_edge(start_key=Node.INCREMENT_ITERATION.value, end_key=Node.DOCUMENT_GRADER.value)
+        workflow.add_edge(start_key=Node.RETRIEVE.value, end_key=Node.DOCUMENT_GRADER.value)
         workflow.add_conditional_edges(
             source=Node.DOCUMENT_GRADER.value,
-            path=self.decide_to_generate,
+            path=are_documents_relevant,
+            path_map={
+                'relevant': Node.ANSWER_GENERATOR.value,
+                'not relevant': Node.REWRITE_QUESTION.value,
+                'max_iter': Node.ANSWER_GENERATOR.value
+            }
         )
-
         workflow.add_edge(start_key=Node.REWRITE_QUESTION.value, end_key=Node.RETRIEVE.value)
         workflow.add_edge(start_key=Node.ANSWER_GENERATOR.value, end_key=END)
 

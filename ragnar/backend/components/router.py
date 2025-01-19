@@ -1,11 +1,10 @@
-from typing import TypedDict
-
 from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.enums import StateField
+from ragnar.backend.state import GraphState
+from ragnar.backend.enums import Node
 
 
 prompt = PromptTemplate(
@@ -36,7 +35,7 @@ class Router:
     def __init__(self, model_name: str):
         self.router = get_router(model_name=model_name)
 
-    def run(self, state: TypedDict) -> TypedDict:
+    def run(self, state: GraphState) -> GraphState:
         """
         Routes the query according to question
 
@@ -47,6 +46,7 @@ class Router:
             state (dict): Updated graph state
         """
 
-        out = self.router.invode({'question': state['question']})
-        state[StateField.DATA_SOURCE.value] = out['datasource']
+        out = self.router.invoke({'question': state.question})
+        state.datasource = out['datasource']
+        state.steps.append(Node.ROUTER.value)
         return state

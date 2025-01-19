@@ -1,11 +1,11 @@
-from typing import TypedDict
-
 from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.enums import Grades
+from ragnar.backend.enums import Grades, Node
+from ragnar.backend.state import GraphState
+
 
 prompt = PromptTemplate(
     template="""You are a teacher grading a quiz. You will be given: 
@@ -40,31 +40,31 @@ class RetrievalGrader:
     def __init__(self, model_name: str):
         self.retrieval_grader = get_retrieval_grader(model_name=model_name)
 
-    def run(self, state: TypedDict) -> TypedDict:
+    def run(self, state: GraphState) -> GraphState:
         """
         Determines whether the retrieved documents are relevant to the question.
 
         Args:
-            state (dict): The current graph state
+            state: The current graph state
 
         Returns:
-            state (dict): Updates documents key with only filtered relevant documents
+            state: Updates documents key with only filtered relevant documents
         """
 
-        state["steps"].append("grade_document_retrieval")
+        state.steps.append(Node.DOCUMENT_GRADER.value)
 
-        if len(state["documents"]) > 0:
-            state['documents_grade'] = Grades.GOOD.value
+        if len(state.documents) > 0:
+            state.documents_grade = Grades.GOOD.value
 
-            for d in state['documents']:
-                score = self.retrieval_grader.invoke({"question": state['question'], "documents": d.page_content})
+            for d in state.documents:
+                score = self.retrieval_grader.invoke({"question": state.question, "documents": d.page_content})
                 grade = score["score"]
                 if grade == "yes":
-                    state['good_documents'].append(d)
+                    state.good_documents.append(d)
                 else:
-                    state['documents_grade'] = Grades.BAD.value
+                    state.documents_grade = Grades.BAD.value
                     continue
         else:
-            state['documents_grade'] = Grades.BAD.value
+            state.documents_grade = Grades.BAD.value
 
         return state

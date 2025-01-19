@@ -1,11 +1,9 @@
-from typing import TypedDict, Literal
+from typing import Literal
 from uuid import uuid4
 from pprint import pprint
 
-from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStoreRetriever
 from langgraph.graph import START, END, StateGraph
-from langgraph.graph.state import CompiledStateGraph
 
 from ragnar.backend.components.answer_generator import AnswerGenerator
 from ragnar.backend.components.question_rewriter import QuestionRewriter
@@ -15,35 +13,15 @@ from ragnar.backend.components.router import Router
 from ragnar.backend.components.hallucination_grader import HallucinationGrader
 from ragnar.backend.components.answer_grader import AnswerGrader
 from ragnar.backend.components.utility_components import (
-    increment_iteration,
     are_documents_relevant,
     is_answer_grounded,
-    is_answer_useful
+    is_answer_useful,
+    reset_generation
 )
-from ragnar.backend.enums import Node, StateField
+from ragnar.backend.enums import Node
+from ragnar.backend.models_config import Configuration
+from ragnar.backend.state import GraphState
 from ragnar.config import settings
-
-
-class GraphState(TypedDict):
-    """
-    Represents the state of our graph.
-
-    Attributes:
-        question: question
-        documents: list of documents
-        generation: LLM generation
-        documents_grade: grade of documents
-
-    """
-    question: str
-    documents: list[Document]
-    generation: str
-    documents_grade: str
-    steps: list[str]
-    iteration: int
-    good_documents: list[Document]
-    original_question: str
-    datasource: str
 
 
 def route_query(state: GraphState) -> Literal['vectorstore', 'internal']:
@@ -57,7 +35,7 @@ def route_query(state: GraphState) -> Literal['vectorstore', 'internal']:
         str: Binary decision for next node to call
     """
 
-    if state['datasource'] == 'vectorstore':
+    if state.datasource == 'vectorstore':
         return 'vectorstore'
     else:
         return 'internal'
@@ -84,42 +62,64 @@ class SelfRAG:
         self.graph = self.build_graph()
 
     def get_response(self, question: str, verbose: bool = False) -> str:
-        config = {"configurable": {"thread_id": str(uuid4())}}
 
-        state_dict = self.graph.invoke(
-            {
-                "question": question,
-                'original_question': question,
-                'documents': [],
-                'good_documents': [],
-                'generation': '',
-                'documents_grade': '',
-                "steps": [],
-                "iteration": 0,
-                'datasource': '',
-            }, config
-        )
-        return state_dict["generation"]
+        if verbose:
+            in_state = GraphState(question=question,
+                                  query=question,
+                                  documents=[],
+                                  good_documents=[],
+                                  generation='',
+                                  documents_grade='',
+                                  steps=[],
+                                  retrieval_iteration=0,
+                                  generation_iteration=0,
+                                  datasource='',
+                                  answer_useful='',
+                                  answer_grounded='')
+
+            for output in self.graph.stream(in_state):
+                for key, value in output.items():
+                    # Node
+                    pprint(f"Node '{key}':")
+                    # Optional: print full state at each node
+                    pprint(value, indent=2, width=80, depth=None)
+                pprint("\n---\n")
+
+        config = {"configurable": {"thread_id": str(uuid4())}}
+        in_state = GraphState(question=question,
+                              query=question,
+                              documents=[],
+                              good_documents= [],
+                              generation= '',
+                              documents_grade= '',
+                              steps= [],
+                              retrieval_iteration= 0,
+                              generation_iteration= 0,
+                              datasource= '',
+                              answer_useful= '',
+                              answer_grounded= '')
+        out_state = self.graph.invoke(in_state, config)
+        return out_state['generation']
 
 
     def build_graph(self):
-        workflow = StateGraph(GraphState)
+        workflow = StateGraph(GraphState, config_schema=Configuration)
 
         # Nodes
         workflow.add_node(node=Node.ROUTER.value, action=self.router.run)
-        workflow.add_node(node='internal_answer_generator', action=self.internal_answer_generator.run)
+        workflow.add_node(node=Node.INTERNAL_ANSWER_GENERATOR.value, action=self.internal_answer_generator.run)
         workflow.add_node(node=Node.RETRIEVE.value, action=self.retriever.run)
         workflow.add_node(node=Node.DOCUMENT_GRADER.value, action=self.retrieval_grader.run)
         workflow.add_node(node=Node.ANSWER_GENERATOR.value, action=self.answer_generator.run)
         workflow.add_node(node=Node.HALLUCINATION_GRADER.value, action=self.hallucination_grader.run)
         workflow.add_node(node=Node.ANSWER_GRADER.value, action=self.answer_grader.run)
         workflow.add_node(node=Node.REWRITE_QUESTION.value, action=self.question_rewriter.run)
-        workflow.add_node(node=Node.INCREMENT_ITERATION.value, action=increment_iteration)
+        workflow.add_node(node=Node.RESET.value, action=reset_generation)
 
         # Edges
-        workflow.add_edge(start_key=START, end_key='router')
+        workflow.add_edge(start_key=START, end_key=Node.ROUTER.value)
         workflow.add_conditional_edges(
-            source='router',
+            source=Node.ROUTER.value,
             path=route_query,
             path_map={
                 'vectorstore': Node.RETRIEVE.value,
@@ -127,9 +127,7 @@ class SelfRAG:
             }
         )
         workflow.add_edge(start_key=Node.INTERNAL_ANSWER_GENERATOR.value, end_key=END)
-
-        workflow.add_edge(start_key=Node.RETRIEVE.value, end_key=Node.INCREMENT_ITERATION.value)
-        workflow.add_edge(start_key=Node.INCREMENT_ITERATION.value, end_key=Node.DOCUMENT_GRADER.value)
+        workflow.add_edge(start_key=Node.RETRIEVE.value, end_key=Node.DOCUMENT_GRADER.value)
         workflow.add_conditional_edges(
             source=Node.DOCUMENT_GRADER.value,
             path=are_documents_relevant,
@@ -148,6 +146,7 @@ class SelfRAG:
             path_map={
                 'grounded': Node.ANSWER_GRADER.value,
                 'not grounded': Node.ANSWER_GENERATOR.value,
+                'max_iter': Node.ANSWER_GRADER.value,
             }
         )
         workflow.add_conditional_edges(
@@ -156,8 +155,11 @@ class SelfRAG:
             path_map={
                 'useful': END,
                 'not useful': Node.REWRITE_QUESTION.value,
+                'max_iter': Node.RESET.value,
             }
         )
+
+        workflow.add_edge(start_key=Node.RESET.value, end_key=END)
 
         compiled_graph = workflow.compile()
         return compiled_graph
