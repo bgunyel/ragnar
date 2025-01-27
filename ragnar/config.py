@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     OUT_FOLDER: str
     MODEL: str
     OLLAMA_URL: str
+    TAVILY_API_KEY: str
 
     class Config:
         case_sensitive = True
