@@ -47,6 +47,7 @@ class Router:
         """
 
         out = self.router.invoke({'question': state.question})
+        print(out)
         state.datasource = out['datasource']
         state.steps.append(Node.ROUTER.value)
         return state

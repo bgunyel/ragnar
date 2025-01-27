@@ -6,18 +6,19 @@ from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.embeddings import GPT4AllEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from ragnar.backend.models_config import Configuration
-from ragnar.backend.models.base_rag import BaseRAG
-from ragnar.backend.models.feedback_base_rag import FeedbackBaseRAG
-from ragnar.backend.models.self_rag import SelfRAG
-from ragnar.backend.utils import check_and_pull_ollama_model
+from ragnar.backend.qa_rag.models_config import Configuration
+from ragnar.backend.qa_rag.models.base_rag import BaseRAG
+from ragnar.backend.qa_rag.models.feedback_base_rag import FeedbackBaseRAG
+from ragnar.backend.qa_rag.models.self_rag import SelfRAG
+from ragnar.backend.utils import load_ollama_model
 from ragnar.config import settings
 
 
 class RagEngine:
     def __init__(self):
 
-        check_and_pull_ollama_model(model_name=settings.MODEL, ollama_url=f'{settings.OLLAMA_URL}')
+        load_ollama_model(model_name=settings.MODEL, ollama_url=f'{settings.OLLAMA_URL}')
+        # check_and_pull_ollama_model(model_name=settings.MODEL, ollama_url=f'{settings.OLLAMA_URL}')
         configuration = Configuration()
 
         self.history = []
@@ -54,7 +55,7 @@ class RagEngine:
 
     def get_response(self, user_message: str):
         self.history.append({"role": "user", "content": user_message})
-        response = self.rag.get_response(question=user_message, verbose=True)
+        response = self.rag.get_response(question=user_message, verbose=False)
         self.history.append({"role": "assistant", "content": response})
         return response
 
