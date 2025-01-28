@@ -3,8 +3,8 @@ from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 
 from ragnar.config import settings
-from ragnar.backend.state import GraphState
-from ragnar.backend.enums import Node
+from ragnar.backend.qa_rag.state import GraphState
+from ragnar.backend.qa_rag.enums import Node
 
 
 prompt = PromptTemplate(

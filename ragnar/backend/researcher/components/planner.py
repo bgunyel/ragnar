@@ -1,12 +1,16 @@
+import asyncio
+
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import RunnableConfig
+from tavily import AsyncTavilyClient
 
 from ragnar.config import settings
 from ragnar.backend.base import Queries
 from ragnar.backend.researcher.enums import Node
 from ragnar.backend.researcher.state import Sections, ReportState
 from ragnar.backend.researcher.configuration import Configuration
+from ragnar.backend.tools import tavily_search_async
 
 
 QUERY_WRITER_INSTRUCTIONS = """You are an expert technical writer, helping to plan a report. 
@@ -21,14 +25,13 @@ The report structure will follow these guidelines:
 
 Your goal is to generate {number_of_queries} search queries that will help gather comprehensive information for planning the report sections. 
 
-The query should:
+Each query should:
 
 1. Be related to the topic 
 2. Help satisfy the requirements specified in the report organization
 
-Make the query specific enough to find high-quality, relevant sources while covering the breadth needed for the report structure."""
-
-
+Make the queries specific enough to find high-quality, relevant sources while covering the breadth needed for the report structure.
+"""
 
 PLANNER_INSTRUCTIONS = """You are an expert technical writer, helping to plan a report.
 
@@ -59,8 +62,12 @@ For example, introduction and conclusion will not require research because they 
 
 class Planner:
     def __init__(self, model_name: str):
-        self.query_writer_llm = ChatOllama(model=model_name, temperature=0, base_url=settings.OLLAMA_URL).with_structured_output(schema=Queries)
+        # self.query_writer_llm = ChatOllama(model=model_name, temperature=0, base_url=settings.OLLAMA_URL, format='json')
+        self.query_writer_llm = ChatOllama(model=model_name, temperature=0,
+                                           base_url=settings.OLLAMA_URL).with_structured_output(schema=Queries)
         self.planner_llm = ChatOllama(model=model_name, temperature=0, base_url=settings.OLLAMA_URL).with_structured_output(schema=Sections)
+
+        self.loop = asyncio.get_event_loop()
 
     def run(self, state: ReportState, config: RunnableConfig) -> ReportState:
         """
@@ -83,5 +90,13 @@ class Planner:
             ]
         )
 
+        client = AsyncTavilyClient(api_key=settings.TAVILY_API_KEY)
+
+        search_docs = self.loop.run_until_complete(
+            tavily_search_async(client=client,
+                                search_queries=results.queries,
+                                search_category=configurable.search_category,
+                                number_of_days_back=configurable.number_of_days_back)
+        )
 
         return state

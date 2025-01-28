@@ -1,12 +1,7 @@
-import os
-from dataclasses import dataclass, field, fields
-from typing import Any, Optional
-
-from langchain_core.runnables import RunnableConfig
-from typing_extensions import Annotated
 from dataclasses import dataclass
 
 from ragnar.backend.base import ConfigurationBase
+from ragnar.backend.base import TavilySearchCategory
 
 
 DEFAULT_REPORT_STRUCTURE = """The report structure should focus on breaking-down the user-provided topic:
@@ -29,5 +24,5 @@ class Configuration(ConfigurationBase):
     """The configurable fields for the chatbot."""
     report_structure: str = DEFAULT_REPORT_STRUCTURE
     number_of_queries: int = 2
-    tavily_topic: str = "general"
-    tavily_days: str = None
+    search_category: TavilySearchCategory = "general"
+    number_of_days_back: int = None

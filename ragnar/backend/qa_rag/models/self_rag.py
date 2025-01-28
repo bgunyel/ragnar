@@ -5,22 +5,22 @@ from pprint import pprint
 from langchain_core.vectorstores import VectorStoreRetriever
 from langgraph.graph import START, END, StateGraph
 
-from ragnar.backend.components.answer_generator import AnswerGenerator
-from ragnar.backend.components.question_rewriter import QuestionRewriter
-from ragnar.backend.components.retrieval_grader import RetrievalGrader
-from ragnar.backend.components.retriever import Retriever
-from ragnar.backend.components.router import Router
-from ragnar.backend.components.hallucination_grader import HallucinationGrader
-from ragnar.backend.components.answer_grader import AnswerGrader
-from ragnar.backend.components.utility_components import (
+from ragnar.backend.qa_rag.components.answer_generator import AnswerGenerator
+from ragnar.backend.qa_rag.components.question_rewriter import QuestionRewriter
+from ragnar.backend.qa_rag.components.retrieval_grader import RetrievalGrader
+from ragnar.backend.qa_rag.components.retriever import Retriever
+from ragnar.backend.qa_rag.components.router import Router
+from ragnar.backend.qa_rag.components.hallucination_grader import HallucinationGrader
+from ragnar.backend.qa_rag.components.answer_grader import AnswerGrader
+from ragnar.backend.qa_rag.components.utility_components import (
     are_documents_relevant,
     is_answer_grounded,
     is_answer_useful,
     reset_generation
 )
-from ragnar.backend.enums import Node
-from ragnar.backend.models_config import Configuration
-from ragnar.backend.state import GraphState
+from ragnar.backend.qa_rag.enums import Node
+from ragnar.backend.qa_rag.models_config import Configuration
+from ragnar.backend.qa_rag.state import GraphState
 from ragnar.config import settings
 
 

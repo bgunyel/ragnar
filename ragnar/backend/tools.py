@@ -2,12 +2,13 @@ import asyncio
 from typing import Literal
 from tavily import AsyncTavilyClient
 
-from ragnar.backend.base import SearchQuery
+# from ragnar.backend.base import SearchQuery
+from ragnar.backend.base import TavilySearchCategory
 
 
 async def tavily_search_async(client: AsyncTavilyClient,
-                              search_queries: list[SearchQuery],
-                              search_category: Literal['news', 'general'],
+                              search_queries: list[str],
+                              search_category: TavilySearchCategory,
                               number_of_days_back: int,
                               max_results: int = 5):
     """
@@ -37,6 +38,6 @@ async def tavily_search_async(client: AsyncTavilyClient,
         kwargs['days'] = number_of_days_back
 
     # Execute all searches concurrently
-    search_tasks = [client.search(query=query.search_query, **kwargs) for query in search_queries]
+    search_tasks = [client.search(query=query, **kwargs) for query in search_queries]
     search_docs = await asyncio.gather(*search_tasks)
     return search_docs
