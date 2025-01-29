@@ -1,9 +1,9 @@
 from typing import Literal
 from langchain_core.runnables import RunnableConfig
 
-from ragnar.backend.state import GraphState
-from ragnar.backend.models_config import Configuration
-from ragnar.backend.enums import Node
+from ragnar.backend.qa_rag.state import GraphState
+from ragnar.backend.qa_rag.models_config import Configuration
+from ragnar.backend.qa_rag.enums import Node
 
 
 def are_documents_relevant(state: GraphState, config: RunnableConfig) -> Literal['relevant', 'not relevant', 'max_iter']:

@@ -47,9 +47,9 @@ class FeedbackBaseRAG:
 
         self.K = retriever.search_kwargs['k'] # store the K parameter
         self.retriever = Retriever(retriever=retriever)
-        self.retrieval_grader = RetrievalGrader(model_name=settings.MODEL)
-        self.question_rewriter = QuestionRewriter(model_name=settings.MODEL)
-        self.answer_generator = AnswerGenerator(model_name=settings.MODEL)
+        self.retrieval_grader = RetrievalGrader(model_name=settings.LANGUAGE_MODEL)
+        self.question_rewriter = QuestionRewriter(model_name=settings.LANGUAGE_MODEL)
+        self.answer_generator = AnswerGenerator(model_name=settings.LANGUAGE_MODEL)
         self.graph = self.build_graph()
 
     def get_response(self, question: str, verbose: bool = False) -> str:

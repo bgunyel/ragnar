@@ -1,8 +1,6 @@
 import asyncio
-from typing import Literal
 from tavily import AsyncTavilyClient
 
-# from ragnar.backend.base import SearchQuery
 from ragnar.backend.base import TavilySearchCategory
 
 

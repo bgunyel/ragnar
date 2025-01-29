@@ -7,13 +7,11 @@ from langchain_core.runnables import RunnableConfig
 from tavily import AsyncTavilyClient
 
 from ragnar.config import settings
-from ragnar.backend.base import Queries
 from ragnar.backend.tools import tavily_search_async
 from ragnar.backend.utils import deduplicate_and_format_sources
 from ragnar.backend.researcher.enums import Node
-from ragnar.backend.researcher.state import Section, Sections, ReportState
+from ragnar.backend.researcher.state import ReportState
 from ragnar.backend.researcher.configuration import Configuration
-
 
 
 QUERY_WRITER_INSTRUCTIONS = """You are an expert technical writer, helping to plan a report. 
@@ -68,11 +66,26 @@ Now, generate the sections of the report. Each section should have the following
 
 - Name - Name for this section of the report.
 - Description - Brief overview of the main topics and concepts to be covered in this section.
-- Research - Whether to perform web research for this section of the report.
+- Research - Whether to perform web research for this section of the report (binary score 'yes' or 'no').
 - Content - The content of the section, which you will leave blank for now.
 
 Consider which sections require web research. 
-For example, introduction and conclusion will not require research because they will distill information from other parts of the report."""
+For example, introduction and conclusion will not require research because they will distill information from other parts of the report.
+
+Return the sections of the report as a JSON object:
+
+{{
+    sections: [
+            {{
+                "name": "string",
+                "description": "string",
+                "research": "string",
+                "content": "string",
+            }}
+    ]
+}}
+
+"""
 
 
 class Planner:
@@ -83,17 +96,13 @@ class Planner:
             base_url=settings.OLLAMA_URL,
             format='json'
         ) | JsonOutputParser()
-        self.planner_llm = ChatOllama(model=model_name, temperature=0, base_url=settings.OLLAMA_URL, format='json')
 
-        """
-        self.query_writer_llm = ChatOllama(model=model_name,
-                                           temperature=0,
-                                           base_url=settings.OLLAMA_URL).with_structured_output(schema=Queries)
-        
-        self.planner_llm = ChatOllama(model=model_name,
-                                      temperature=0,
-                                      base_url=settings.OLLAMA_URL).with_structured_output(schema=Sections)
-        """
+        self.planner_llm = ChatOllama(
+            model=model_name,
+            temperature=0,
+            base_url=settings.OLLAMA_URL,
+            format='json'
+        ) | JsonOutputParser()
 
         self.event_loop = asyncio.get_event_loop()
 
@@ -110,10 +119,12 @@ class Planner:
         )
 
         search_docs = self.event_loop.run_until_complete(
-            tavily_search_async(client=AsyncTavilyClient(api_key=settings.TAVILY_API_KEY),
-                                search_queries=results.queries,
-                                search_category=configurable.search_category,
-                                number_of_days_back=configurable.number_of_days_back)
+            tavily_search_async(
+                client = AsyncTavilyClient(api_key=settings.TAVILY_API_KEY),
+                search_queries = [x['query'] for x in results['queries']],
+                search_category = configurable.search_category,
+                number_of_days_back = configurable.number_of_days_back
+            )
         )
 
         source_str = deduplicate_and_format_sources(search_response=search_docs,

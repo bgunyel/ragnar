@@ -51,14 +51,14 @@ class SelfRAG:
 
         self.K = retriever.search_kwargs['k'] # store the K parameter
 
-        self.router = Router(model_name=settings.MODEL)
+        self.router = Router(model_name=settings.LANGUAGE_MODEL)
         self.retriever = Retriever(retriever=retriever)
-        self.retrieval_grader = RetrievalGrader(model_name=settings.MODEL)
-        self.question_rewriter = QuestionRewriter(model_name=settings.MODEL)
-        self.answer_generator = AnswerGenerator(model_name=settings.MODEL, is_rag=True)
-        self.internal_answer_generator = AnswerGenerator(model_name=settings.MODEL, is_rag=False)
-        self.hallucination_grader = HallucinationGrader(model_name=settings.MODEL)
-        self.answer_grader = AnswerGrader(model_name=settings.MODEL)
+        self.retrieval_grader = RetrievalGrader(model_name=settings.LANGUAGE_MODEL)
+        self.question_rewriter = QuestionRewriter(model_name=settings.LANGUAGE_MODEL)
+        self.answer_generator = AnswerGenerator(model_name=settings.LANGUAGE_MODEL, is_rag=True)
+        self.internal_answer_generator = AnswerGenerator(model_name=settings.LANGUAGE_MODEL, is_rag=False)
+        self.hallucination_grader = HallucinationGrader(model_name=settings.LANGUAGE_MODEL)
+        self.answer_grader = AnswerGrader(model_name=settings.LANGUAGE_MODEL)
         self.graph = self.build_graph()
 
     def get_response(self, question: str, verbose: bool = False) -> str:

@@ -26,7 +26,7 @@ def main():
         time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
             tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
         print(f'{time_now}\n')
-        print(f'Ragnar ({settings.MODEL}) ', end='')
+        print(f'Ragnar ({settings.LANGUAGE_MODEL}) ', end='')
 
         response = rag_engine.get_response(user_message=user_input)
 

@@ -1,25 +1,9 @@
-from typing import Literal
-from langchain_core.documents import Document
-from pydantic import BaseModel, PrivateAttr, Field
-from typing_extensions import Annotated
-
-"""
-    Classes taken (and some are modified) from https://github.com/langchain-ai/report-mAIstro/report_masitro.py
-"""
-
-class Section(BaseModel):
-    name: str = Field(description="Name for this section of the report.")
-    description: str = Field(description="Brief overview of the main topics and concepts to be covered in this section.")
-    research: Literal[True, False] = Field(description="Whether to perform web research for this section of the report.")
-    content: str = Field(description="The content of the section.")
-
-class Sections(BaseModel):
-    sections: list[Section] = Field(description="Sections of the report.")
+from pydantic import BaseModel
 
 
 class ReportState(BaseModel):
     """
-    Represents the state of our graph.
+    Represents the state of our research report.
 
     Attributes:
         topic: research topic
@@ -27,4 +11,23 @@ class ReportState(BaseModel):
 
     """
     topic: str
+    steps: list[str]
+
+
+class SummaryState(BaseModel):
+    """
+    Represents the state of our research summary.
+
+    Attributes:
+        topic: research topic
+        search_queries: list of search queries
+        source_str: String of formatted source content from web search
+        content: Content generated from sources
+        steps: steps followed during graph run
+
+    """
+    topic: str
+    search_queries: list[str]
+    source_str: str
+    content: str
     steps: list[str]

@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from ragnar.backend.base import ConfigurationBase
 from ragnar.backend.base import TavilySearchCategory
 
@@ -19,7 +17,6 @@ DEFAULT_REPORT_STRUCTURE = """The report structure should focus on breaking-down
    - Provide a concise summary of the report"""
 
 
-@dataclass(kw_only=True)
 class Configuration(ConfigurationBase):
     """The configurable fields for the chatbot."""
     report_structure: str = DEFAULT_REPORT_STRUCTURE

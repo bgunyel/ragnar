@@ -17,18 +17,17 @@ class Researcher:
     """
 
     def __init__(self):
-        self.planner = Planner(model_name=settings.MODEL)
+        self.planner = Planner(model_name=settings.LANGUAGE_MODEL)
         self.graph = self.build_graph()
 
-    def get_response(self, question: str, verbose: bool = False) -> str:
+    def get_response(self, topic: str, verbose: bool = False) -> str:
         config = {"configurable": {"thread_id": str(uuid4())}}
 
         in_state = ReportState(
-            topic=question,
+            topic=topic,
             steps=[],
         )
         out_state = self.graph.invoke(in_state, config)
-
         return out_state
 
 

@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     UI_PORT: int = 8501
     INPUT_FOLDER: str
     OUT_FOLDER: str
-    MODEL: str
+    LANGUAGE_MODEL: str
+    REASONING_MODEL: str
     OLLAMA_URL: str
     TAVILY_API_KEY: str
 

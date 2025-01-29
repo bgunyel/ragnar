@@ -34,7 +34,7 @@ class GraphState(TypedDict):
 class BaseRAG:
     def __init__(self, retriever: VectorStoreRetriever):
         self.retriever = Retriever(retriever=retriever)
-        self.answer_generator = AnswerGenerator(model_name=settings.MODEL)
+        self.answer_generator = AnswerGenerator(model_name=settings.LANGUAGE_MODEL)
         self.graph = self.build_graph()
 
     def get_response(self, question: str) -> str:
