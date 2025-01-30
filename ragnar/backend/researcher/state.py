@@ -30,4 +30,5 @@ class SummaryState(BaseModel):
     search_queries: list[str]
     source_str: str
     content: str
+    summary_exists: bool = False
     steps: list[str]

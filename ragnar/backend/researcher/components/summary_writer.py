@@ -18,6 +18,10 @@ SUMMARY_WRITER_INSTRUCTIONS = """You are an expert writer working on writing a s
 
 {topic}
 
+Use this source material to help write the summary:
+
+{context}
+
 Guidelines for writing:
 
 1. Technical Accuracy:
@@ -34,7 +38,7 @@ Guidelines for writing:
 - Start with your most important insight in **bold**
 
 3. Structure:
-- Use ## for section title (Markdown format)
+- Use ## for summary title (Markdown format)
 - Only use ONE structural element IF it helps clarify your point:
   * Either a focused table comparing 2-3 key items (using Markdown table syntax)
   * Or a short list (3-5 items) using proper Markdown list syntax:
@@ -45,22 +49,19 @@ Guidelines for writing:
   * List each source with title, date, and URL
   * Format: `- Title : URL`
 
-3. Writing Approach:
+4. Writing Approach:
 - Include at least one specific example or case study
 - Use concrete details over general statements
 - Make every word count
-- No preamble prior to creating the section content
+- No preamble prior to creating the summary content
 - Focus on your single most important point
 
-4. Use this source material to help write the section:
-{context}
-
 5. Quality Checks:
-- Approximately (but less than) {word_limit} words (excluding title and sources)
+- Approximately {word_limit} words (excluding title and sources)
 - Careful use of only ONE structural element (table or list) and only if it helps clarify your point
 - One specific example / case study
 - Starts with bold insight
-- No preamble prior to creating the section content
+- No preamble prior to creating the summary content
 - Sources cited at end
 """
 
@@ -70,18 +71,32 @@ class SummaryWriter:
 
     def run(self, state: SummaryState) -> SummaryState:
 
-        instructions = SUMMARY_WRITER_INSTRUCTIONS.format(topic=state.topic,
-                                                          context=state.source_str,
-                                                          word_limit=1000)
+        if state.summary_exists: # Extending existing summary
+            human_message_content = (
+                f"Extend the existing summary: {state.content}\n\n"
+                f"Include new search results: {state.source_str} "
+                f"That addresses the following topic: {state.topic}"
+            )
+            instructions = SUMMARY_WRITER_INSTRUCTIONS
+        else:
+            # Writing a new summary
+
+            instructions = SUMMARY_WRITER_INSTRUCTIONS.format(topic=state.topic,
+                                                              context=state.source_str,
+                                                              word_limit=1000)
+
+            # human_message_content = "Generate a summary based on the provided sources."
+
 
         summary = self.writer_llm.invoke(
             [
                 SystemMessage(content=instructions),
-                HumanMessage(content="Generate a summary based on the provided sources.")
+                # HumanMessage(content=human_message_content)
             ]
         )
 
         state.steps.append(Node.SUMMARY_WRITER.value)
         state.content = summary.content
+        state.summary_exists = True
 
         return state
