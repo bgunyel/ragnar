@@ -32,3 +32,4 @@ class SummaryState(BaseModel):
     content: str
     summary_exists: bool = False
     steps: list[str]
+    iteration: int = 0

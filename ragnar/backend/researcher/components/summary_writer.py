@@ -14,7 +14,7 @@ from ragnar.backend.researcher.state import SummaryState
 from ragnar.backend.researcher.configuration import Configuration
 
 
-SUMMARY_WRITER_INSTRUCTIONS = """You are an expert writer working on writing a summary about the following topic:
+WRITING_INSTRUCTIONS = """You are an expert writer working on writing a summary about the following topic:
 
 {topic}
 
@@ -22,22 +22,44 @@ Use this source material to help write the summary:
 
 {context}
 
+1. Highlight the most relevant information from each source
+2. Provide a concise overview of the key points related to the report topic
+3. Emphasize significant findings or insights
+4. Ensure a coherent flow of information
+"""
+
+EXTENDING_INSTRUCTIONS = """You are an expert writer working on extending a research summary with new search results:
+
+Topic of the summary:
+
+{topic}
+
+Existing summary:
+
+{summary}
+
+New search results:
+
+{search_results}
+
+1. Seamlessly integrate new information without repeating what's already covered
+2. Maintain consistency with the existing content's style and depth
+3. Only add new, non-redundant information
+4. Ensure smooth transitions between existing and new content
+"""
+
+
+GUIDELINES = """
+
 Guidelines for writing:
 
-1. Technical Accuracy:
-- Include specific version numbers
-- Reference concrete metrics/benchmarks
-- Cite official documentation
-- Use technical terminology precisely
-
-2. Length and Style:
-- Approximately {word_limit} words
+1. Length and Style:
+- Maximum {word_count} words
 - No marketing language
-- Technical focus
 - Write in simple, clear language
 - Start with your most important insight in **bold**
 
-3. Structure:
+2. Structure:
 - Use ## for summary title (Markdown format)
 - Only use ONE structural element IF it helps clarify your point:
   * Either a focused table comparing 2-3 key items (using Markdown table syntax)
@@ -49,44 +71,40 @@ Guidelines for writing:
   * List each source with title, date, and URL
   * Format: `- Title : URL`
 
-4. Writing Approach:
-- Include at least one specific example or case study
+3. Writing Approach:
 - Use concrete details over general statements
 - Make every word count
 - No preamble prior to creating the summary content
-- Focus on your single most important point
 
-5. Quality Checks:
-- Approximately {word_limit} words (excluding title and sources)
+4. Quality Checks:
+- Maximum {word_count} words (excluding title and sources)
 - Careful use of only ONE structural element (table or list) and only if it helps clarify your point
-- One specific example / case study
 - Starts with bold insight
 - No preamble prior to creating the summary content
 - Sources cited at end
 """
 
 class SummaryWriter:
-    def __init__(self, model_name: str):
-        self.writer_llm = ChatOllama(model=model_name, temperature=0, base_url=settings.OLLAMA_URL)
+    def __init__(self, model_name: str, context_window_length: int):
+        self.writer_llm = ChatOllama(model=model_name,
+                                     temperature=0,
+                                     base_url=settings.OLLAMA_URL,
+                                     num_ctx=context_window_length)
 
     def run(self, state: SummaryState) -> SummaryState:
 
-        if state.summary_exists: # Extending existing summary
-            human_message_content = (
-                f"Extend the existing summary: {state.content}\n\n"
-                f"Include new search results: {state.source_str} "
-                f"That addresses the following topic: {state.topic}"
+        if state.summary_exists:
+            # Extending existing summary
+            instructions = (
+                EXTENDING_INSTRUCTIONS.format(topic=state.topic, summary=state.content, search_results=state.source_str) +
+                GUIDELINES.format(word_count=1000)
             )
-            instructions = SUMMARY_WRITER_INSTRUCTIONS
         else:
             # Writing a new summary
-
-            instructions = SUMMARY_WRITER_INSTRUCTIONS.format(topic=state.topic,
-                                                              context=state.source_str,
-                                                              word_limit=1000)
-
-            # human_message_content = "Generate a summary based on the provided sources."
-
+            instructions = (
+                    WRITING_INSTRUCTIONS.format(topic=state.topic, context=state.source_str) +
+                    GUIDELINES.format(word_count=1000)
+            )
 
         summary = self.writer_llm.invoke(
             [

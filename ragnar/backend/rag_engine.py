@@ -3,7 +3,7 @@ import os
 import datetime
 
 from ragnar.config import settings
-from ragnar.backend.utils import load_ollama_model
+from ragnar.backend.utils import load_ollama_model, get_flow_chart
 from ragnar.backend.researcher.researcher import Researcher
 from ragnar.backend.researcher.summarizer import Summarizer
 
@@ -25,6 +25,10 @@ class RagEngine:
         load_ollama_model(model_name=settings.REASONING_MODEL, ollama_url=f'{settings.OLLAMA_URL}')
         self.history = []
         self.responder = Summarizer()
+
+        flow_chart = get_flow_chart(rag_model=self.responder)
+        flow_chart.save(os.path.join(settings.OUT_FOLDER, 'flow_chart.png'))
+
 
     def get_response(self, user_message: str):
         self.history.append({"role": "user", "content": user_message})

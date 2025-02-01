@@ -12,6 +12,7 @@ def check_and_pull_ollama_model(model_name: str, ollama_url: str) -> None:
 
     # Modified from https://github.com/ollama/ollama-python/blob/main/examples/pull.py
     if model_name not in available_model_names:
+        print(f'Pulling {model_name}')
         current_digest, bars = '', {}
         for progress in ollama_client.pull(model=model_name, stream=True):
             digest = progress.get('digest', '')

@@ -44,12 +44,13 @@ Return the queries as a JSON object:
 
 
 class QueryWriter:
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str, context_window_length: int):
         self.query_writer_llm = ChatOllama(
             model=model_name,
             temperature=0,
             base_url=settings.OLLAMA_URL,
-            format='json'
+            format='json',
+            num_ctx=context_window_length,
         ) | JsonOutputParser()
 
     def run(self, state: SummaryState, config: RunnableConfig) -> SummaryState:
