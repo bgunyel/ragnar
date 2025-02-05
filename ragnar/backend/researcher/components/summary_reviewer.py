@@ -6,9 +6,11 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import RunnableConfig
 from tavily import AsyncTavilyClient
+from opentelemetry import trace
 
-from ragnar.backend.qa_rag.components.utility_components import reset_generation
 from ragnar.config import settings
+from ragnar.backend.tools import tracer
+from ragnar.backend.qa_rag.components.utility_components import reset_generation
 from ragnar.backend.tools import tavily_search_async
 from ragnar.backend.utils import deduplicate_and_format_sources
 from ragnar.backend.researcher.enums import Node
@@ -57,6 +59,7 @@ Provide your analysis in JSON format:
 
 class SummaryReviewer:
     def __init__(self, model_name: str, context_window_length: int):
+        self.model_name = model_name
         self.reviewer_llm = ChatOllama(
             model=model_name,
             temperature=0,
@@ -65,6 +68,7 @@ class SummaryReviewer:
             num_ctx=context_window_length
         ) | JsonOutputParser()
 
+    @tracer.start_as_current_span('summary_reviewer')
     def run(self, state: SummaryState) -> SummaryState:
 
         instructions = REVIEW_INSTRUCTIONS.format(topic = state.topic, summary=state.content)
@@ -79,8 +83,21 @@ class SummaryReviewer:
         state.search_queries = [x['query'] for x in result['queries']]
         state.iteration += 1
 
-        print(f'Iteration: {state.iteration}')
-        pprint(state.content)
-        pprint(result)
+        span = trace.get_current_span()
+        span.set_status(trace.StatusCode.OK)
+        span.set_attributes(
+            attributes={
+                'topic': state.topic,
+                'model_name': self.model_name,
+                'iteration': state.iteration,
+                'knowledge_gap': result['knowledge_gap'],
+                'follow-up questions': [x['question'] if isinstance(x, dict) else x for x in result['follow-up questions']],
+                'search_queries': state.search_queries,
+            }
+        )
+
+        # print(f'Iteration: {state.iteration}')
+        # pprint(state.content)
+        # pprint(result)
 
         return state

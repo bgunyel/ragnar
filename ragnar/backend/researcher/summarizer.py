@@ -4,8 +4,10 @@ from typing import Literal
 
 from langgraph.graph import START, END, StateGraph
 from langchain_core.runnables import RunnableConfig
+from opentelemetry import trace
 
 from ragnar.config import settings
+from ragnar.backend.tools import tracer
 from ragnar.backend.researcher.state import SummaryState
 from ragnar.backend.researcher.configuration import Configuration
 from ragnar.backend.researcher.enums import Node
@@ -40,6 +42,7 @@ class Summarizer:
 
         self.graph = self.build_graph()
 
+    @tracer.start_as_current_span('summarizer')
     def get_response(self, topic: str, verbose: bool = False) -> str:
         config = {"configurable": {"thread_id": str(uuid4())}}
 

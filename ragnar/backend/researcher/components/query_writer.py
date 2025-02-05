@@ -2,8 +2,10 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import RunnableConfig
+from opentelemetry import trace
 
 from ragnar.config import settings
+from ragnar.backend.tools import tracer
 from ragnar.backend.researcher.enums import Node
 from ragnar.backend.researcher.state import SummaryState
 from ragnar.backend.researcher.configuration import Configuration
@@ -45,6 +47,7 @@ Return the queries as a JSON object:
 
 class QueryWriter:
     def __init__(self, model_name: str, context_window_length: int):
+        self.model_name = model_name
         self.query_writer_llm = ChatOllama(
             model=model_name,
             temperature=0,
@@ -53,6 +56,7 @@ class QueryWriter:
             num_ctx=context_window_length,
         ) | JsonOutputParser()
 
+    @tracer.start_as_current_span('query_writer')
     def run(self, state: SummaryState, config: RunnableConfig) -> SummaryState:
         """
         Writes queries for comprehensive web search.
@@ -72,4 +76,15 @@ class QueryWriter:
         )
 
         state.search_queries = [x['query'] for x in results['queries']]
+
+        span = trace.get_current_span()
+        span.set_status(trace.StatusCode.OK)
+        span.set_attributes(
+            attributes={
+                'topic': state.topic,
+                'model_name': self.model_name,
+                'search_queries': state.search_queries,
+                'iteration': state.iteration,
+            }
+        )
         return state

@@ -2,9 +2,11 @@ import asyncio
 
 from langchain_core.runnables import RunnableConfig
 from tavily import AsyncTavilyClient
+from opentelemetry import trace
 
-from ragnar.backend.researcher.state import SummaryState
 from ragnar.config import settings
+from ragnar.backend.tools import tracer
+from ragnar.backend.researcher.state import SummaryState
 from ragnar.backend.tools import tavily_search_async
 from ragnar.backend.utils import deduplicate_and_format_sources
 from ragnar.backend.researcher.enums import Node
@@ -14,6 +16,7 @@ class WebSearch:
     def __init__(self):
         self.event_loop = asyncio.get_event_loop()
 
+    @tracer.start_as_current_span('web_search')
     def run(self, state: SummaryState, config: RunnableConfig) -> SummaryState:
         configurable = Configuration.from_runnable_config(config=config)
 
@@ -32,4 +35,16 @@ class WebSearch:
 
         state.steps.append(Node.WEB_SEARCH.value)
         state.source_str = source_str
+
+        span = trace.get_current_span()
+        span.set_status(trace.StatusCode.OK)
+        span.set_attributes(
+            attributes={
+                'topic': state.topic,
+                'search_queries': state.search_queries,
+                'iteration': state.iteration,
+                'source_string': state.source_str,
+            }
+        )
+
         return state

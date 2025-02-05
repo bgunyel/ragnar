@@ -1,7 +1,33 @@
 import asyncio
 from tavily import AsyncTavilyClient
 
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor, BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.semconv.resource import ResourceAttributes
+
+from ragnar.config import settings
 from ragnar.backend.base import TavilySearchCategory
+
+
+
+###
+# Configure OpenTelemetry
+###
+
+resource = Resource(
+    attributes={
+        ResourceAttributes.SERVICE_NAME: settings.APPLICATION_NAME,
+        ResourceAttributes.SERVICE_VERSION: "1.0.0",
+    }
+)
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4317")) # OTLP endpoint for Jaeger
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider) # Sets the global default tracer provider
+tracer = trace.get_tracer(f'{settings.APPLICATION_NAME}.tracer') # Creates a tracer from the global tracer provider
 
 
 async def tavily_search_async(client: AsyncTavilyClient,

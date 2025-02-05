@@ -5,8 +5,10 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_ollama import ChatOllama
 from langchain_core.runnables import RunnableConfig
 from tavily import AsyncTavilyClient
+from opentelemetry import trace
 
 from ragnar.config import settings
+from ragnar.backend.tools import tracer
 from ragnar.backend.tools import tavily_search_async
 from ragnar.backend.utils import deduplicate_and_format_sources
 from ragnar.backend.researcher.enums import Node
@@ -86,11 +88,13 @@ Guidelines for writing:
 
 class SummaryWriter:
     def __init__(self, model_name: str, context_window_length: int):
+        self.model_name = model_name
         self.writer_llm = ChatOllama(model=model_name,
                                      temperature=0,
                                      base_url=settings.OLLAMA_URL,
                                      num_ctx=context_window_length)
 
+    @tracer.start_as_current_span('summary_writer')
     def run(self, state: SummaryState) -> SummaryState:
 
         if state.summary_exists:
@@ -116,5 +120,16 @@ class SummaryWriter:
         state.steps.append(Node.SUMMARY_WRITER.value)
         state.content = summary.content
         state.summary_exists = True
+
+        span = trace.get_current_span()
+        span.set_status(trace.StatusCode.OK)
+        span.set_attributes(
+            attributes={
+                'topic': state.topic,
+                'model_name': self.model_name,
+                'iteration': state.iteration,
+                'summary': state.content,
+            }
+        )
 
         return state
