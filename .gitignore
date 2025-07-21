@@ -1,8 +1,22 @@
+# Python generated files/folders
 .idea/
 __pycache__/
-.env
+.ipynb_checkpoints/
+
+# Virtual Environments
+.venv/
+.python-version
+
+# Coding Assistants Related
+.claude/
+
+# Input/Output folders
 input/
 out/
 docs/
-.ipynb_checkpoints/
 chroma.log
+
+# Environment Variables
+.env
+
+

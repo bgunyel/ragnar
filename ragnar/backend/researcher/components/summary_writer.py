@@ -25,7 +25,7 @@ Use this source material to help write the summary:
 {context}
 
 1. Highlight the most relevant information from each source
-2. Provide a concise overview of the key points related to the report topic
+2. Provide a concise overview of the key points related to the summary topic
 3. Emphasize significant findings or insights
 4. Ensure a coherent flow of information
 """

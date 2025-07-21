@@ -30,7 +30,7 @@ def route_research(state: SummaryState, config: RunnableConfig) -> Literal["cont
 class Summarizer:
 
     """
-    Reproduction from https://github.com/langchain-ai/report-mAIstro with Ollama
+    Reproduction from https://github.com/langchain-ai/ollama-deep-researcher
     """
 
     def __init__(self):

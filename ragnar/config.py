@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     UI_PORT: int = 8501
     INPUT_FOLDER: str
     OUT_FOLDER: str
-    LANGUAGE_MODEL: str
-    REASONING_MODEL: str
+    LANGUAGE_MODEL: str = 'qwen2.5:14b'
+    REASONING_MODEL: str = 'deepseek-r1:14b'
     OLLAMA_URL: str
     TAVILY_API_KEY: str
 

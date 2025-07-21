@@ -4,7 +4,6 @@ import datetime
 
 from ragnar.config import settings
 from ragnar.backend.utils import load_ollama_model, get_flow_chart
-from ragnar.backend.researcher.researcher import Researcher
 from ragnar.backend.researcher.summarizer import Summarizer
 
 
