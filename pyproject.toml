@@ -1,33 +1,23 @@
-[tool.poetry]
+[project]
 name = "ragnar"
 version = "0.1.0"
 description = "Retrieval Augmented Generation based kNowledge AdviseR"
-authors = ["Bertan Günyel <bertan.gunyel@gmail.com>"]
 readme = "README.md"
+authors = [
+    { name = "Bertan Günyel", email = "bertan.gunyel@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "ai-common @ git+https://github.com/bgunyel/ai-common.git@main",
+    "business-researcher @ git+https://github.com/bgunyel/business-researcher.git@main",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11.3"
-streamlit = "^1.41.1"
-langchain = "^0.3.13"
-langchain-core = "^0.3.28"
-langchain-ollama = "^0.2.2"
-pydantic-settings = "^2.7.0"
-langchain-community = "^0.3.13"
-pypdf = "^5.1.0"
-langgraph = "^0.2.60"
-pillow = "^11.0.0"
-bs4 = "^0.0.2"
-chromadb = "^0.5.23"
-langchain-chroma = "^0.1.4"
-gpt4all = "^2.8.2"
-tiktoken = "^0.8.0"
-tqdm = "^4.67.1"
-pydantic = "^2.10.5"
-tavily-python = "^0.5.0"
-opentelemetry-api = "^1.29.0"
-opentelemetry-sdk = "^1.29.0"
-opentelemetry-exporter-otlp = "^1.29.0"
+[project.scripts]
+business-researcher = "ragnar:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
