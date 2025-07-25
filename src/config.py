@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str
     LANGSMITH_API_KEY: str
     LANGSMITH_TRACING: str
+    SUPABASE_URL: str
+    SUPABASE_SECRET_KEY: str
 
     OUT_FOLDER: str = os.path.join(ENV_FILE_DIR, 'out')
 

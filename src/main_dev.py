@@ -1,13 +1,11 @@
-import os
-import asyncio
 import datetime
+import os
 import time
-import rich
-from uuid import uuid4
+
+from ai_common import LlmServers
 
 from config import settings
 from ragnar import BusinessIntelligenceAgent
-from ai_common import LlmServers, calculate_token_cost
 
 
 def main():
@@ -45,7 +43,10 @@ def main():
         }
     }
 
-    bia = BusinessIntelligenceAgent(llm_config=llm_config, web_search_api_key=settings.TAVILY_API_KEY)
+    bia = BusinessIntelligenceAgent(llm_config=llm_config,
+                                    web_search_api_key=settings.TAVILY_API_KEY,
+                                    database_url=settings.SUPABASE_URL,
+                                    database_key=settings.SUPABASE_SECRET_KEY)
     bia.run(query='Please research Langchain')
 
     dummy = -32
