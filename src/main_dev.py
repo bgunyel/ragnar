@@ -47,7 +47,7 @@ def main():
                                     web_search_api_key=settings.TAVILY_API_KEY,
                                     database_url=settings.SUPABASE_URL,
                                     database_key=settings.SUPABASE_SECRET_KEY)
-    bia.run(query='Please research Langchain')
+    bia.run(query='research LangChain')
 
     dummy = -32
 

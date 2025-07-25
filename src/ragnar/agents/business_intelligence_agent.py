@@ -107,15 +107,27 @@ class BusinessIntelligenceAgent:
                     }
                     out_dict = self.run_research_loop(input_dict=input_dict)
                     tool_message_content = json.dumps(out_dict['content'], indent=2)
+                    state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
                 case 'ResearchCompany':
-                    input_dict = {
-                        "name": tool_call['args']['company_name'],
-                        'search_type': SearchType.COMPANY
-                    }
-                    out_dict = self.run_research_loop(input_dict=input_dict)
-                    tool_message_content = json.dumps(out_dict['content'], indent=2)
+                    response = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])
+                    if len(response) > 0:
+                        company = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])[0]
+                        tool_message_content = "Information fetched from database:\n\n" + json.dumps(company, indent=2)
+                    else:
+                        input_dict = {
+                            "name": tool_call['args']['company_name'],
+                            'search_type': SearchType.COMPANY
+                        }
+                        out_dict = self.run_research_loop(input_dict=input_dict)
+                        tool_message_content = json.dumps(out_dict['content'], indent=2)
+                        state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
                 case 'FetchCompanyFromDataBase':
-                    company = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])[0]
+                    response = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])
+                    if len(response) > 0:
+                        company = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])[0]
+                        tool_message_content = json.dumps(company, indent=2)
+                    else:
+                        tool_message_content = f"There is no record for {tool_call['args']['company_name']} in database"
                 case 'FetchPersonFromDataBase':
                     pass
                 case 'InsertCompanyToDataBase':
@@ -126,7 +138,6 @@ class BusinessIntelligenceAgent:
                 case _:
                     raise RuntimeError('Unknown tool call')
 
-
             state.messages.append(
                 ToolMessage(
                     content=tool_message_content,
@@ -134,10 +145,12 @@ class BusinessIntelligenceAgent:
                     tool_call_id=tool_call["id"],
             ))
 
-            for m in self.models:
-                state.token_usage[m]['input_tokens'] += out_dict['token_usage'][m]['input_tokens']
-                state.token_usage[m]['output_tokens'] += out_dict['token_usage'][m]['output_tokens']
+        return state
 
+    def update_token_usage(self, state: AgentState, token_usage: dict[str, Any]) -> AgentState:
+        for m in self.models:
+            state.token_usage[m]['input_tokens'] += token_usage[m]['input_tokens']
+            state.token_usage[m]['output_tokens'] += token_usage[m]['output_tokens']
         return state
 
     def run_research_loop(self, input_dict: dict[str, Any]) -> dict[str, Any]:
@@ -166,7 +179,7 @@ class BusinessIntelligenceAgent:
             .eq("name", company_name)
             .execute()
         )
-        return response['data']
+        return response.data
 
     def build_graph(self):
         workflow = StateGraph(AgentState, config_schema=Configuration)
