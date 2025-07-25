@@ -1,3 +1,4 @@
+import os
 import asyncio
 import datetime
 import time
@@ -10,6 +11,9 @@ from ai_common import LlmServers, calculate_token_cost
 
 
 def main():
+    os.environ['LANGSMITH_API_KEY'] = settings.LANGSMITH_API_KEY
+    os.environ['LANGSMITH_TRACING'] = settings.LANGSMITH_TRACING
+
     llm_config = {
         'language_model': {
             'model': 'llama-3.3-70b-versatile',
@@ -42,25 +46,7 @@ def main():
     }
 
     bia = BusinessIntelligenceAgent(llm_config=llm_config, web_search_api_key=settings.TAVILY_API_KEY)
-
-
-    print('\n')
-    print('Welcome! Type "exit" to quit.')
-    while True:
-        print('')
-        user_input = input('You: ')
-        if user_input.lower() == 'exit':
-            break
-
-        print(f'Ragnar: ', end='')
-
-        response = bia.run(query=user_input)
-
-        for chunk in response.split():
-            print(chunk, end=' ')
-            if chunk.endswith('.'):
-                print('')
-            time.sleep(0.05)
+    bia.run(query='Please research Langchain')
 
     dummy = -32
 

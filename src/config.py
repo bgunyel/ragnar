@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str
     OPENAI_API_KEY: str
     ANTHROPIC_API_KEY: str
+    LANGSMITH_API_KEY: str
+    LANGSMITH_TRACING: str
 
     OUT_FOLDER: str = os.path.join(ENV_FILE_DIR, 'out')
 
