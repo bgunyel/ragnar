@@ -6,11 +6,9 @@ ENV_FILE_DIR = os.path.abspath(os.path.join(FILE_DIR, os.pardir))
 
 
 class Settings(BaseSettings):
-    APPLICATION_NAME: str = "RAGNAR: Retrieval Augmented Generation based kNowledge AdviseR"
+    APPLICATION_NAME: str = "RAGNAR: Retrieval AuGmented kNowledge AdviseR"
 
-    LLM_BASE_URL: str
     TAVILY_API_KEY: str
-    VLLM_API_KEY: str
     GROQ_API_KEY: str
     OPENAI_API_KEY: str
     ANTHROPIC_API_KEY: str
