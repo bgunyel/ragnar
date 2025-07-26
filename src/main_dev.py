@@ -47,7 +47,23 @@ def main():
                                     web_search_api_key=settings.TAVILY_API_KEY,
                                     database_url=settings.SUPABASE_URL,
                                     database_key=settings.SUPABASE_SECRET_KEY)
-    bia.run(query='research LangChain')
+    print('\n')
+    print('Welcome! Type "exit" to quit.')
+    while True:
+        print('')
+        user_input = input('You: ')
+        if user_input.lower() == 'exit':
+            break
+
+        print(f'Ragnar: ', end='')
+
+        response = bia.run(query=user_input)
+
+        for chunk in response.split():
+            print(chunk, end=' ')
+            if chunk.endswith('.'):
+                print('')
+            time.sleep(0.05)
 
     dummy = -32
 

@@ -98,45 +98,109 @@ class BusinessIntelligenceAgent:
     def tools_call(self, state: AgentState) -> AgentState:
 
         for tool_call in state.messages[-1].tool_calls:
+
+            tool_message_content = f"Tool message content NOT INITIALIZED: {tool_call['name']}"
+
             match tool_call['name']:
                 case 'ResearchPerson':
-                    input_dict = {
-                        "name": tool_call['args']['name'],
-                        "company": tool_call['args']['company'],
-                        'search_type': SearchType.PERSON
-                    }
-                    out_dict = self.run_research_loop(input_dict=input_dict)
-                    tool_message_content = json.dumps(out_dict['content'], indent=2)
-                    state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
+                    research_required = False
+
+                    # First fetch the current company of the person
+                    name = tool_call['args']['name']
+                    company_name = tool_call['args']['company']
+                    response = self.fetch_company_from_db(company_name=company_name)
+                    if len(response) > 0:
+                        company = response[0]
+                        current_company_id = company['id']
+                        response = self.fetch_person_from_db(name=name, current_company_id=current_company_id)
+                        if len(response) > 0:
+                            person = response[0]
+                            tool_message_content = json.dumps(person, indent=2)
+                        else:
+                            research_required = True
+                    else:
+                        research_required = True
+
+                    if research_required:
+                        state, out_dict = self.research_person(name=tool_call['args']['name'], company=tool_call['args']['company'], state=state)
+                        tool_message_content = json.dumps(out_dict['content'], indent=2)
+
                 case 'ResearchCompany':
                     response = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])
                     if len(response) > 0:
-                        company = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])[0]
+                        company = response[0]
                         tool_message_content = "Information fetched from database:\n\n" + json.dumps(company, indent=2)
                     else:
-                        input_dict = {
-                            "name": tool_call['args']['company_name'],
-                            'search_type': SearchType.COMPANY
-                        }
-                        out_dict = self.run_research_loop(input_dict=input_dict)
+                        state, out_dict = self.research_company(company_name=tool_call['args']['company_name'], state=state)
                         tool_message_content = json.dumps(out_dict['content'], indent=2)
-                        state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
+
                 case 'FetchCompanyFromDataBase':
                     response = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])
                     if len(response) > 0:
-                        company = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])[0]
+                        company = response[0]
                         tool_message_content = json.dumps(company, indent=2)
                     else:
-                        tool_message_content = f"There is no record for {tool_call['args']['company_name']} in database"
+                        tool_message_content = f"There is no record for {tool_call['args']['company_name']} in database."
+
                 case 'FetchPersonFromDataBase':
-                    pass
+                    # First fetch the current company of the person
+                    name = tool_call['args']['name']
+                    company_name = tool_call['args']['company']
+                    response = self.fetch_company_from_db(company_name = company_name)
+                    if len(response) > 0:
+                        company = response[0]
+                        current_company_id = company['id']
+                        response = self.fetch_person_from_db(name = name, current_company_id = current_company_id)
+                        if len(response) > 0:
+                            person = response[0]
+                            tool_message_content = json.dumps(person, indent=2)
+                        else:
+                            tool_message_content = f"There is no record for {name} from {company_name} in database."
+                    else:
+                        tool_message_content = (
+                                f"There is no record for {tool_call['args']['company']} in database.\n\n" +
+                                f"For a person to be successfully inserted into the database, first his/her current company should be inserted."
+                        )
+
                 case 'InsertCompanyToDataBase':
-                    id = self.insert_company_to_db(input_dict=tool_call['args'])
-                    tool_message_content = f"{tool_call['args']['name']} successfully inserted into {Table.COMPANIES} table with id {id}"
+                    # Check whether the company record exists in the DB
+                    response = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])
+                    if len(response) > 0:
+                        company = response[0]
+                        tool_message_content = f"Company {tool_call['args']['company_name']} already exists in database with id: {company['id']}"
+                    else:
+                        id = self.insert_company_to_db(input_dict=tool_call['args'])
+                        tool_message_content = f"{tool_call['args']['name']} successfully inserted into database {Table.COMPANIES} table with id {id}"
+
                 case 'InsertPersonToDataBase':
-                    pass
+
+                    name = tool_call['args']['name']
+                    current_company = tool_call['args']['current_company']
+
+                    # First check whether the company of the person exists in database
+                    response = self.fetch_company_from_db(company_name=current_company)
+                    if len(response) > 0:
+                        company = response[0]
+                        current_company_id = company['id'] # Company exists in the database
+
+                        response = self.fetch_person_from_db(name=name, current_company_id=current_company_id)
+                        if len(response) > 0:
+                            person = response[0]  # Person exists in the database
+                            tool_message_content = f"{name} from {current_company} already exist in the database with id: {person['id']}."
+                        else:
+                            id = self.insert_person_to_db(input_dict=tool_call['args'],
+                                                          current_company_id=current_company_id)
+                            tool_message_content = f"{name} from {current_company} successfully inserted into database {Table.PERSONS} table with id {id}"
+
+                    else: # No company, no person in the database
+                        state, out_dict = self.research_company(company_name=tool_call['args']['company_name'], state=state)
+                        current_company_id = self.insert_company_to_db(input_dict=out_dict['content'])
+                        id = self.insert_person_to_db(input_dict=tool_call['args'], current_company_id=current_company_id)
+                        tool_message_content = f"{tool_call['args']['name']} successfully inserted into database {Table.PERSONS} table with id {id}"
+
                 case _:
-                    raise RuntimeError('Unknown tool call')
+                    tool_message_content = f"Unknown tool call: {tool_call['name']}"
+                    # raise RuntimeError('Unknown tool call')
 
             state.messages.append(
                 ToolMessage(
@@ -146,6 +210,25 @@ class BusinessIntelligenceAgent:
             ))
 
         return state
+
+    def research_person(self, name: str, company: str, state: AgentState) -> (AgentState, dict[str, Any]):
+        input_dict = {
+            "name": name,
+            "company": company,
+            'search_type': SearchType.PERSON
+        }
+        out_dict = self.run_research_loop(input_dict=input_dict)
+        state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
+        return state, out_dict
+
+    def research_company(self, company_name: str, state: AgentState) -> (AgentState, dict[str, Any]):
+        input_dict = {
+            "name": company_name,
+            'search_type': SearchType.COMPANY
+        }
+        out_dict = self.run_research_loop(input_dict=input_dict)
+        state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
+        return state, out_dict
 
     def update_token_usage(self, state: AgentState, token_usage: dict[str, Any]) -> AgentState:
         for m in self.models:
@@ -179,6 +262,40 @@ class BusinessIntelligenceAgent:
             .eq("name", company_name)
             .execute()
         )
+        return response.data
+
+    def insert_person_to_db(self, input_dict: dict[str, Any], current_company_id: int):
+        row_dict = copy.deepcopy(input_dict)
+        row_dict['created_by_id'] = 1
+        row_dict['updated_by_id'] = 1
+        row_dict['current_company_id'] = current_company_id
+        row_dict.pop('current_company')
+
+        response = (
+            self.db_client.table(Table.PERSONS)
+            .insert(row_dict)
+            .execute()
+        )
+        id = response.data[0]['id']
+        return id
+
+    def fetch_person_from_db(self, name: str, current_company_id: int | None) -> list[dict[str, Any]]:
+
+        if current_company_id is None:
+            response = (
+                self.db_client.table(Table.PERSONS)
+                .select("*")
+                .eq("name", name)
+                .execute()
+            )
+        else:
+            response = (
+                self.db_client.table(Table.PERSONS)
+                .select("*")
+                .eq("name", name)
+                .eq("current_company_id", current_company_id)
+                .execute()
+            )
         return response.data
 
     def build_graph(self):
