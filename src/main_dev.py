@@ -1,6 +1,7 @@
 import datetime
 import os
 import time
+import rich
 
 from ai_common import LlmServers
 
@@ -58,12 +59,7 @@ def main():
         print(f'Ragnar: ', end='')
 
         response = bia.run(query=user_input)
-
-        for chunk in response.split():
-            print(chunk, end=' ')
-            if chunk.endswith('.'):
-                print('')
-            time.sleep(0.05)
+        rich.print(response)
 
     dummy = -32
 
