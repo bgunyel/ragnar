@@ -74,7 +74,7 @@ class BusinessIntelligenceAgent:
         self.message_memory.append(SystemMessage(content=AGENT_INSTRUCTIONS))
 
 
-    def run(self, query: str):
+    def run(self, query: str) -> dict[str, Any]:
         self.message_memory.append(HumanMessage(content=query))
         in_state = AgentState(
             messages = self.message_memory,
@@ -85,7 +85,13 @@ class BusinessIntelligenceAgent:
 
         out_state = self.graph.invoke(in_state, config)
         self.message_memory = out_state['messages']
-        dummy = -32
+
+        out_dict = {
+            'content':out_state['messages'][-1].content,
+            'token_usage': out_state['token_usage'],
+        }
+
+        return out_dict
 
     def llm_call(self, state: AgentState) -> AgentState:
         with get_usage_metadata_callback() as cb:
@@ -164,13 +170,14 @@ class BusinessIntelligenceAgent:
 
                 case 'InsertCompanyToDataBase':
                     # Check whether the company record exists in the DB
-                    response = self.fetch_company_from_db(company_name=tool_call['args']['company_name'])
+                    company_name = tool_call['args']['name']
+                    response = self.fetch_company_from_db(company_name=company_name)
                     if len(response) > 0:
                         company = response[0]
-                        tool_message_content = f"Company {tool_call['args']['company_name']} already exists in database with id: {company['id']}"
+                        tool_message_content = f"Company {company_name} already exists in database with id: {company['id']}"
                     else:
                         id = self.insert_company_to_db(input_dict=tool_call['args'])
-                        tool_message_content = f"{tool_call['args']['name']} successfully inserted into database {Table.COMPANIES} table with id {id}"
+                        tool_message_content = f"{company_name} successfully inserted into database {Table.COMPANIES} table with id {id}"
 
                 case 'InsertPersonToDataBase':
 
@@ -193,7 +200,7 @@ class BusinessIntelligenceAgent:
                             tool_message_content = f"{name} from {current_company} successfully inserted into database {Table.PERSONS} table with id {id}"
 
                     else: # No company, no person in the database
-                        state, out_dict = self.research_company(company_name=tool_call['args']['company_name'], state=state)
+                        state, out_dict = self.research_company(company_name=tool_call['args']['current_company'], state=state)
                         current_company_id = self.insert_company_to_db(input_dict=out_dict['content'])
                         id = self.insert_person_to_db(input_dict=tool_call['args'], current_company_id=current_company_id)
                         tool_message_content = f"{tool_call['args']['name']} successfully inserted into database {Table.PERSONS} table with id {id}"

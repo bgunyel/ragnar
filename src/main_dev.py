@@ -58,8 +58,8 @@ def main():
 
         print(f'Ragnar: ', end='')
 
-        response = bia.run(query=user_input)
-        rich.print(response)
+        out_dict = bia.run(query=user_input)
+        rich.print(out_dict['content'])
 
     dummy = -32
 
