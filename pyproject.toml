@@ -10,6 +10,7 @@ requires-python = ">=3.13"
 dependencies = [
     "ai-common @ git+https://github.com/bgunyel/ai-common.git@main",
     "business-researcher @ git+https://github.com/bgunyel/business-researcher.git@main",
+    "streamlit>=1.47.1",
     "supabase>=2.17.0",
 ]
 

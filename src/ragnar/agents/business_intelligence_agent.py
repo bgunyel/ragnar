@@ -1,4 +1,5 @@
 import asyncio
+import time
 from uuid import uuid4
 from typing import Any, Literal
 import json
@@ -36,7 +37,7 @@ CONFIG = {
     }
 
 AGENT_INSTRUCTIONS = """
-You are a smart and helpful business intelligence assistant. Your name is Bia.
+You are a smart and helpful business intelligence assistant. Your name is Bia. You are a member of Team Ragnar.
 """
 
 def should_continue(state: AgentState) -> Literal['continue', 'end']:
@@ -73,6 +74,13 @@ class BusinessIntelligenceAgent:
         self.graph = self.build_graph()
         self.message_memory.append(SystemMessage(content=AGENT_INSTRUCTIONS))
 
+    def stream_response(self, user_message: str):
+        out_dict = self.run(query=user_message)
+
+        for chunk in out_dict['content'].split(sep=' '):
+            chunk += ' '
+            yield chunk
+            time.sleep(0.05)
 
     def run(self, query: str) -> dict[str, Any]:
         self.message_memory.append(HumanMessage(content=query))
