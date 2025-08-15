@@ -61,8 +61,6 @@ def main():
         out_dict = bia.run(query=user_input)
         rich.print(out_dict['content'])
 
-    dummy = -32
-
 
 if __name__ == '__main__':
     time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
