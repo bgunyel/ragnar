@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic import BaseModel, Field
 from business_researcher import CompanySchema, PersonSchema
 

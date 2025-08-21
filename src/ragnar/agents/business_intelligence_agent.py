@@ -11,8 +11,10 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.callbacks import get_usage_metadata_callback
+from langchain_core.runnables import RunnableConfig
 from supabase import create_client, Client
 
+from ai_common import calculate_token_cost
 from business_researcher import BusinessResearcher, SearchType
 from .state import AgentState
 from .configuration import Configuration
@@ -31,7 +33,7 @@ from .tools import (
 )
 
 AGENT_INSTRUCTIONS = """
-You are a smart and helpful business intelligence assistant. Your name is Bia. You are a member of Team Ragnar.
+You are a smart and helpful business intelligence assistant. Your name is Bia. You are a member of King Ragnar's team.
 
 <Task>
 Your job is to use tools to perform user's commands and find information to answer user's questions.
@@ -59,11 +61,13 @@ You have access to 6 main tools:
 * When the user wants to get information about a company:
     - First check whether there is an entry about the company in the database (by using FetchCompanyFromDataBase).
     - If there is information about the company in the database, return the information.
-    - If there is not any information about the company in the database, perform a research about the company (by using ResearchCompany).
+    - If there is not any information about the company in the database, perform a research about the company (by using ResearchCompany). 
+    - If you perform a research about a company (by using ResearchCompany), ask the user for confirmation to save the new information to the database.
 * When the user wants to get information about a person:
     - First check whether there is an entry about the person in the database (by using FetchPersonFromDataBase).
     - If there is information about the person in the database, return the information.
     - If there is not any information about the person in the database, perform a research about the person (by using ResearchPerson).
+    - If you perform a research about a person (by using ResearchPerson), ask the user for confirmation to save the new information to the database.
 * When the user wants you to update the information about a specific company in the database:
     - Be sure to include the union of the alternative names information both from the existing database record, and the fresh information about the company.
     - If the name of the company is found as an alternative name in the new information, add the name of the company in the old record to the union of alternative names.
@@ -91,8 +95,8 @@ You have access to 6 main tools:
 </Available Tools>
 """
 
-CONFIG = {
-    "configurable": {
+CONFIG = RunnableConfig(
+    configurable={
         'thread_id': str(uuid4()),
         'max_iterations': 3,
         'max_results_per_query': 4,
@@ -100,7 +104,7 @@ CONFIG = {
         'number_of_days_back': 1e6,
         'number_of_queries': 3,
         }
-    }
+)
 
 
 def should_continue(state: AgentState) -> Literal['continue', 'end']:
@@ -121,6 +125,7 @@ class BusinessIntelligenceAgent:
         self.business_researcher = BusinessResearcher(llm_config = llm_config, web_search_api_key = web_search_api_key)
         self.db_client: Client = create_client(supabase_url=database_url, supabase_key=database_key)
         self.message_memory = []
+        self.llm_config = llm_config
 
         model_params = llm_config['reasoning_model']
         base_llm = init_chat_model(
@@ -163,14 +168,18 @@ class BusinessIntelligenceAgent:
             token_usage = {m: {'input_tokens': 0, 'output_tokens': 0} for m in self.models},
         )
 
-        config = {"configurable": {"thread_id": '1'}}
+        config = RunnableConfig(configurable={"thread_id": '1'})
 
         out_state = self.graph.invoke(in_state, config)
         self.message_memory = out_state['messages']
 
+        cost_list, total_cost = calculate_token_cost(llm_config=self.llm_config, token_usage=out_state['token_usage'])
+
         out_dict = {
-            'content':out_state['messages'][-1].content,
+            'content': out_state['messages'][-1].content,
             'token_usage': out_state['token_usage'],
+            'cost_list': cost_list,
+            'total_cost': total_cost,
         }
 
         return out_dict
@@ -433,12 +442,26 @@ class BusinessIntelligenceAgent:
         return response.data
 
     def list_all_names(self, table_name: str) -> list[dict[str, Any]]:
-        response = (
-            self.db_client.table(table_name)
-            .select(ColumnsBase.NAME)
-            .execute()
-        )
-        return response.data
+
+        match table_name:
+            case Table.COMPANIES:
+                response = (
+                    self.db_client.table(table_name)
+                    .select(ColumnsBase.NAME)
+                    .execute()
+                )
+                out = response.data
+            case Table.PERSONS:
+                response = (
+                    self.db_client.table(table_name)
+                    .select(f"{ColumnsBase.NAME}, {PersonsColumns.CURRENT_COMPANY_ID}, {Table.COMPANIES}!inner({ColumnsBase.NAME})")
+                    .execute()
+                )
+                out = [{'name': x['name'], 'current_company': x['companies']['name']} for x in response.data]
+            case _:
+                out = []
+
+        return out
 
 
     def build_graph(self):
