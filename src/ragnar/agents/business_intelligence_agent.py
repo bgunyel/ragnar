@@ -19,12 +19,14 @@ from business_researcher import BusinessResearcher, SearchType
 from .state import AgentState
 from .configuration import Configuration
 from .enums import Node, Table, ColumnsBase, CompaniesColumns, PersonsColumns
+from .utils import insert_to_db
 from .tools import (
     ResearchPerson,
     ResearchCompany,
     InsertCompanyToDataBase,
     InsertPersonToDataBase,
     UpdateCompanyInDatabase,
+    UpdatePersonInDatabase,
     FetchCompanyFromDataBase,
     FetchPersonFromDataBase,
     ListAllPersonNamesFromDataBase,
@@ -42,17 +44,18 @@ You can call these tools in series or in parallel, your functionality is conduct
 </Task>
 
 <Available Tools>
-You have access to 6 main tools:
+You have access to the following main tools:
 1. **ResearchPerson**: To research a specific person within a company using web search.
 2. **ResearchCompany**: To research a company using web search.
 3. **InsertCompanyToDataBase**: To insert company information to database.
 4. **InsertPersonToDataBase**: To insert person information to database.
 5. **FetchCompanyFromDataBase**: To get information about a company from the database.
 6. **FetchPersonFromDataBase**: To get information about a person from the database.
-7. **UpdateCompanyInDatabase**: To update already existing information about a company in the database. 
-8. **ListAllPersonNamesFromDataBase**: To get the list of all person names in the database.
-9. **ListAllCompanyNamesFromDataBase**: To get the list of all company names in the database.
-10. **ListPersonsFromCompanyId**: To get the list of all persons in a given company.
+7. **UpdateCompanyInDatabase**: To update already existing information about a company in the database.
+8. **UpdatePersonInDatabase**: To update already existing information about a person in the database. 
+9. **ListAllPersonNamesFromDataBase**: To get the list of all person names in the database.
+10. **ListAllCompanyNamesFromDataBase**: To get the list of all company names in the database.
+11. **ListPersonsFromCompanyId**: To get the list of all persons in a given company.
 
 **CRITICAL**:
 * There are 2 tables in the database: persons and companies.
@@ -142,6 +145,7 @@ class BusinessIntelligenceAgent:
                 InsertCompanyToDataBase,
                 InsertPersonToDataBase,
                 UpdateCompanyInDatabase,
+                UpdatePersonInDatabase,
                 FetchCompanyFromDataBase,
                 FetchPersonFromDataBase,
                 ListAllPersonNamesFromDataBase,
@@ -242,8 +246,8 @@ class BusinessIntelligenceAgent:
                         company = response[0]
                         tool_message_content = f"Company {company_name} already exists in database with id: {company['id']}"
                     else:
-                        id = self.insert_company_to_db(input_dict=tool_call['args'])
-                        tool_message_content = f"{company_name} successfully inserted into database {Table.COMPANIES} table with id {id}"
+                        idx = self.insert_company_to_db(input_dict=tool_call['args'])
+                        tool_message_content = f"{company_name} successfully inserted into database {Table.COMPANIES} table with id {idx}"
 
                 case 'InsertPersonToDataBase':
 
@@ -262,21 +266,21 @@ class BusinessIntelligenceAgent:
                             person = response[0]  # Person exists in the database
                             tool_message_content = f"{name} from {current_company} already exist in the database with id: {person['id']}."
                         else:
-                            id = self.insert_person_to_db(input_dict=tool_call['args'],
+                            idx = self.insert_person_to_db(input_dict=tool_call['args'],
                                                           current_company_id=current_company_id)
-                            tool_message_content = f"{name} from {current_company} successfully inserted into database {Table.PERSONS} table with id {id}"
+                            tool_message_content = f"{name} from {current_company} successfully inserted into database {Table.PERSONS} table with id {idx}"
 
                     else: # No company, no person in the database
                         # First, research the company and insert to the database.
                         # Then insert the person (with link to the company entry).
                         state, out_dict = self.research_company(company_name=tool_call['args']['current_company'], state=state)
                         current_company_id = self.insert_company_to_db(input_dict=out_dict['content'])
-                        id = self.insert_person_to_db(input_dict=tool_call['args'], current_company_id=current_company_id)
-                        tool_message_content = f"{tool_call['args']['name']} successfully inserted into database {Table.PERSONS} table with id {id}"
+                        idx = self.insert_person_to_db(input_dict=tool_call['args'], current_company_id=current_company_id)
+                        tool_message_content = f"{tool_call['args']['name']} successfully inserted into database {Table.PERSONS} table with id {idx}"
 
                 case 'UpdateCompanyInDatabase':
-                    id = self.update_company_in_db(input_dict=tool_call['args'])
-                    tool_message_content = f"{tool_call['args']['name']} in database {Table.COMPANIES} table with id {id} is successfully updated."
+                    idx = self.update_company_in_db(input_dict=tool_call['args'])
+                    tool_message_content = f"{tool_call['args']['name']} in database {Table.COMPANIES} table with id {idx} is successfully updated."
                 case 'ListAllPersonNamesFromDataBase':
                     response = self.list_all_names(table_name=Table.PERSONS)
                     tool_message_content = json.dumps(response, indent=2)
@@ -298,7 +302,7 @@ class BusinessIntelligenceAgent:
 
         return state
 
-    def research_person(self, name: str, company: str, state: AgentState) -> (AgentState, dict[str, Any]):
+    def research_person(self, name: str, company: str, state: AgentState) -> tuple[AgentState, dict[str, Any]]:
         input_dict = {
             "name": name,
             "company": company,
@@ -308,7 +312,7 @@ class BusinessIntelligenceAgent:
         state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
         return state, out_dict
 
-    def research_company(self, company_name: str, state: AgentState) -> (AgentState, dict[str, Any]):
+    def research_company(self, company_name: str, state: AgentState) -> tuple[AgentState, dict[str, Any]]:
         input_dict = {
             "name": company_name,
             'search_type': SearchType.COMPANY
@@ -330,41 +334,32 @@ class BusinessIntelligenceAgent:
         return out_dict
 
     def insert_company_to_db(self, input_dict: dict[str, Any]):
-        time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
-            tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
+        idx = insert_to_db(db_client=self.db_client, input_dict=input_dict, table_name=Table.COMPANIES)
+        return idx
 
-        row_dict = copy.deepcopy(input_dict)
-        row_dict[CompaniesColumns.CREATED_AT] = str(time_now)
-        row_dict[CompaniesColumns.UPDATED_AT] = str(time_now)
-        # These two will be inputs after the system supports multiple users
-        row_dict[CompaniesColumns.CREATED_BY_ID] = 1
-        row_dict[CompaniesColumns.UPDATED_BY_ID] = 1
-
-        response = (
-            self.db_client.table(Table.COMPANIES)
-            .insert(row_dict)
-            .execute()
-        )
-        id = response.data[0]['id']
-        return id
+    def insert_person_to_db(self, input_dict: dict[str, Any], current_company_id: int):
+        input_dict[PersonsColumns.CURRENT_COMPANY_ID] = current_company_id
+        input_dict.pop('current_company')
+        idx = insert_to_db(db_client=self.db_client, input_dict=input_dict, table_name=Table.COMPANIES)
+        return idx
 
     def update_company_in_db(self, input_dict: dict[str, Any]):
         time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
             tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
 
         row_dict = copy.deepcopy(input_dict)
-        id = row_dict.pop(CompaniesColumns.ID)
+        idx = row_dict.pop(CompaniesColumns.ID)
         row_dict[CompaniesColumns.UPDATED_BY_ID] = 1 # This will be an input after the system supports multiple users
         row_dict[CompaniesColumns.UPDATED_AT] = str(time_now)
 
         response = (
             self.db_client.table(Table.COMPANIES)
             .update(row_dict)
-            .eq(CompaniesColumns.ID, id)
+            .eq(CompaniesColumns.ID, idx)
             .execute()
         )
-        id = response.data[0]['id']
-        return id
+        idx = response.data[0]['id']
+        return idx
 
     def fetch_company_by_name(self, company_name: str) -> list[dict[str, Any]]:
         response = (
@@ -392,27 +387,6 @@ class BusinessIntelligenceAgent:
             .execute()
         )
         return response.data
-
-    def insert_person_to_db(self, input_dict: dict[str, Any], current_company_id: int):
-        time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
-            tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
-
-        row_dict = copy.deepcopy(input_dict)
-        row_dict[PersonsColumns.CREATED_AT] = str(time_now)
-        row_dict[PersonsColumns.UPDATED_AT] = str(time_now)
-        # These two will be inputs after the system supports multiple users
-        row_dict[PersonsColumns.CREATED_BY_ID] = 1
-        row_dict[PersonsColumns.UPDATED_BY_ID] = 1
-        row_dict[PersonsColumns.CURRENT_COMPANY_ID] = current_company_id
-        row_dict.pop('current_company')
-
-        response = (
-            self.db_client.table(Table.PERSONS)
-            .insert(row_dict)
-            .execute()
-        )
-        id = response.data[0]['id']
-        return id
 
     def fetch_person_from_db(self, name: str, current_company_id: int | None) -> list[dict[str, Any]]:
         if current_company_id is None:
@@ -442,7 +416,6 @@ class BusinessIntelligenceAgent:
         return response.data
 
     def list_all_names(self, table_name: str) -> list[dict[str, Any]]:
-
         match table_name:
             case Table.COMPANIES:
                 response = (
@@ -458,11 +431,10 @@ class BusinessIntelligenceAgent:
                     .execute()
                 )
                 out = [{'name': x['name'], 'current_company': x['companies']['name']} for x in response.data]
-            case _:
-                out = []
-
+            case _: # noinspection PyUnreachableCode
+                raise ValueError(f'Invalid table name! - Can be either {Table.COMPANIES} or {Table.PERSONS}')
+        
         return out
-
 
     def build_graph(self):
         workflow = StateGraph(AgentState, config_schema=Configuration)

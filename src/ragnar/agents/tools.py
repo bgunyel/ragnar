@@ -26,6 +26,10 @@ class UpdateCompanyInDatabase(CompanySchema):
     """Update a company in the database."""
     id: int = Field(description="The id of the company in the database.")
 
+class UpdatePersonInDatabase(PersonSchema):
+    """Update a person in the database."""
+    id: int = Field(description="The id of the person in the database.")
+
 class FetchCompanyFromDataBase(BaseModel):
     """Fetch details of a company from database."""
     company_name: str = Field(
