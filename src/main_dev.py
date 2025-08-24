@@ -6,43 +6,14 @@ import rich
 from ai_common import LlmServers
 
 from config import settings
-from ragnar import BusinessIntelligenceAgent
+from ragnar import BusinessIntelligenceAgent, get_llm_config
 
 
 def main():
     os.environ['LANGSMITH_API_KEY'] = settings.LANGSMITH_API_KEY
     os.environ['LANGSMITH_TRACING'] = settings.LANGSMITH_TRACING
 
-    llm_config = {
-        'language_model': {
-            'model': 'llama-3.3-70b-versatile',
-            'model_provider': LlmServers.GROQ.value,
-            'api_key': settings.GROQ_API_KEY,
-            'model_args': {
-                'service_tier': "auto",
-                'temperature': 0,
-                'max_retries': 5,
-                'max_tokens': 32768,
-                'model_kwargs': {
-                    'top_p': 0.95,
-                }
-            }
-        },
-        'reasoning_model': {
-            'model': 'qwen/qwen3-32b', #'deepseek-r1-distill-llama-70b',
-            'model_provider': LlmServers.GROQ.value,
-            'api_key': settings.GROQ_API_KEY,
-            'model_args': {
-                'service_tier': "auto",
-                'temperature': 0,
-                'max_retries': 5,
-                'max_tokens': 32768,
-                'model_kwargs': {
-                    'top_p': 0.95,
-                }
-            }
-        }
-    }
+    llm_config = get_llm_config()
 
     bia = BusinessIntelligenceAgent(llm_config=llm_config,
                                     web_search_api_key=settings.TAVILY_API_KEY,

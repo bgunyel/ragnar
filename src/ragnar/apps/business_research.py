@@ -6,9 +6,8 @@ from typing import Any, Dict, Optional
 import logging
 import streamlit as st
 
-from ai_common import LlmServers
 from config import settings
-from ragnar import BusinessIntelligenceAgent
+from ragnar import BusinessIntelligenceAgent, get_llm_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -308,14 +307,6 @@ class StreamlitBusinessUI:
             response_time = end_time - start_time
 
             # Create response metadata
-            """
-            metadata = {
-                "response_time": response_time,
-                "timestamp": datetime.datetime.now().isoformat(),
-                "model": st.session_state.model_settings['language_model']['model'],
-                "tokens_used": "N/A"  # Would need to be provided by agent
-            }
-            """
             metadata = {
                 "response_time": response_time,
                 "timestamp": datetime.datetime.now().isoformat(),
@@ -389,37 +380,7 @@ def create_llm_config() -> Dict[str, Any]:
         st.error(f"Missing required settings: {', '.join(missing_settings)}")
         st.stop()
 
-    llm_config = {
-        'language_model': {
-            'model': 'llama-3.3-70b-versatile',
-            'model_provider': LlmServers.GROQ.value,
-            'api_key': settings.GROQ_API_KEY,
-            'model_args': {
-                'service_tier': "auto",
-                'temperature': 0,
-                'max_retries': 5,
-                'max_tokens': 32768,
-                'model_kwargs': {
-                    'top_p': 0.95,
-                }
-            }
-        },
-        'reasoning_model': {
-            'model': 'qwen/qwen3-32b',
-            'model_provider': LlmServers.GROQ.value,
-            'api_key': settings.GROQ_API_KEY,
-            'model_args': {
-                'service_tier': "auto",
-                'temperature': 0,
-                'max_retries': 5,
-                'max_tokens': 32768,
-                'model_kwargs': {
-                    'top_p': 0.95,
-                }
-            }
-        }
-    }
-
+    llm_config = get_llm_config()
     return llm_config
 
 
