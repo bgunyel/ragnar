@@ -1,10 +1,8 @@
 import asyncio
-import datetime
 import time
 from uuid import uuid4
 from typing import Any, Literal
 import json
-import copy
 
 from langchain.chat_models import init_chat_model
 from langgraph.graph import START, END, StateGraph
@@ -19,7 +17,7 @@ from business_researcher import BusinessResearcher, SearchType
 from .state import AgentState
 from .configuration import Configuration
 from .enums import Node, Table, ColumnsBase, CompaniesColumns, PersonsColumns
-from .utils import insert_to_db
+from .utils import insert_entity_to_db, update_entity_in_db, fetch_entity_by_id, fetch_entity_by_name
 from .tools import (
     ResearchPerson,
     ResearchCompany,
@@ -281,6 +279,25 @@ class BusinessIntelligenceAgent:
                 case 'UpdateCompanyInDatabase':
                     idx = self.update_company_in_db(input_dict=tool_call['args'])
                     tool_message_content = f"{tool_call['args']['name']} in database {Table.COMPANIES} table with id {idx} is successfully updated."
+                case 'UpdatePersonInDatabase':
+                    name = tool_call['args']['name']
+                    new_company = tool_call['args']['current_company']
+
+                    # First check whether the new company of the person exists in database
+                    response = self.fetch_company_by_name(company_name=new_company)
+                    if len(response) > 0: # Company exists in the database
+                        company = response[0]
+                        new_company_id = company['id']
+                        idx = self.update_person_in_db(input_dict=tool_call['args'], new_company_id=new_company_id)
+                        tool_message_content = f"{name} in database {Table.PERSONS} table with id {idx} is successfully updated."
+                    else: # No company
+                        # First, research the company and insert to the database.
+                        # Then update the person (with link to the new company entry).
+                        state, out_dict = self.research_company(company_name=new_company, state=state)
+                        new_company_id = self.insert_company_to_db(input_dict=out_dict['content'])
+                        idx = self.update_person_in_db(input_dict=tool_call['args'], new_company_id=new_company_id)
+                        tool_message_content = f"{name} in database {Table.PERSONS} table with id {idx} is successfully updated."
+
                 case 'ListAllPersonNamesFromDataBase':
                     response = self.list_all_names(table_name=Table.PERSONS)
                     tool_message_content = json.dumps(response, indent=2)
@@ -334,68 +351,44 @@ class BusinessIntelligenceAgent:
         return out_dict
 
     def insert_company_to_db(self, input_dict: dict[str, Any]):
-        idx = insert_to_db(db_client=self.db_client, input_dict=input_dict, table_name=Table.COMPANIES)
+        idx = insert_entity_to_db(db_client=self.db_client, input_dict=input_dict, table_name=Table.COMPANIES)
         return idx
 
     def insert_person_to_db(self, input_dict: dict[str, Any], current_company_id: int):
         input_dict[PersonsColumns.CURRENT_COMPANY_ID] = current_company_id
         input_dict.pop('current_company')
-        idx = insert_to_db(db_client=self.db_client, input_dict=input_dict, table_name=Table.COMPANIES)
+        idx = insert_entity_to_db(db_client=self.db_client, input_dict=input_dict, table_name=Table.PERSONS)
         return idx
 
     def update_company_in_db(self, input_dict: dict[str, Any]):
-        time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
-            tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
+        idx = update_entity_in_db(db_client=self.db_client, input_dict=input_dict, table_name=Table.COMPANIES)
+        return idx
 
-        row_dict = copy.deepcopy(input_dict)
-        idx = row_dict.pop(CompaniesColumns.ID)
-        row_dict[CompaniesColumns.UPDATED_BY_ID] = 1 # This will be an input after the system supports multiple users
-        row_dict[CompaniesColumns.UPDATED_AT] = str(time_now)
-
-        response = (
-            self.db_client.table(Table.COMPANIES)
-            .update(row_dict)
-            .eq(CompaniesColumns.ID, idx)
-            .execute()
-        )
-        idx = response.data[0]['id']
+    def update_person_in_db(self, input_dict: dict[str, Any], new_company_id: int):
+        input_dict[PersonsColumns.CURRENT_COMPANY_ID] = new_company_id
+        input_dict.pop('current_company')
+        idx = update_entity_in_db(db_client=self.db_client, input_dict=input_dict, table_name=Table.PERSONS)
         return idx
 
     def fetch_company_by_name(self, company_name: str) -> list[dict[str, Any]]:
-        response = (
-            self.db_client.table(Table.COMPANIES)
-            .select("*")
-            .eq(CompaniesColumns.NAME, company_name)
-            .execute()
-        )
-
-        if len(response.data) == 0:
+        data = fetch_entity_by_name(db_client=self.db_client, entity_name=company_name, table_name=Table.COMPANIES)
+        if len(data) == 0:
             response = (
                 self.db_client.table(Table.COMPANIES)
                 .select("*")
                 .contains(CompaniesColumns.ALTERNATIVE_NAMES, [company_name])
                 .execute()
             )
-
-        return response.data
+            data = response.data
+        return data
 
     def fetch_company_by_id(self, company_id: int) -> list[dict[str, Any]]:
-        response = (
-            self.db_client.table(Table.COMPANIES)
-            .select("*")
-            .eq(CompaniesColumns.ID, company_id)
-            .execute()
-        )
-        return response.data
+        data = fetch_entity_by_id(db_client=self.db_client, table_name=Table.COMPANIES, entity_id=company_id)
+        return data
 
     def fetch_person_from_db(self, name: str, current_company_id: int | None) -> list[dict[str, Any]]:
         if current_company_id is None:
-            response = (
-                self.db_client.table(Table.PERSONS)
-                .select("*")
-                .eq(PersonsColumns.NAME, name)
-                .execute()
-            )
+            data = fetch_entity_by_name(db_client=self.db_client, entity_name=name, table_name=Table.PERSONS)
         else:
             response = (
                 self.db_client.table(Table.PERSONS)
@@ -404,7 +397,8 @@ class BusinessIntelligenceAgent:
                 .eq(PersonsColumns.CURRENT_COMPANY_ID, current_company_id)
                 .execute()
             )
-        return response.data
+            data = response.data
+        return data
 
     def list_persons_from_company_id(self, company_id: int) -> list[dict[str, Any]]:
         response = (
