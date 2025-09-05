@@ -3,8 +3,6 @@ import os
 import time
 import rich
 
-from ai_common import LlmServers
-
 from config import settings
 from ragnar import BusinessIntelligenceAgent, get_llm_config
 
@@ -34,15 +32,13 @@ def main():
 
 
 if __name__ == '__main__':
-    time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
-        tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
+    time_now = datetime.datetime.now().astimezone(tz=settings.TIME_ZONE)
+    print(f"{settings.APPLICATION_NAME} started at {time_now.isoformat(timespec='seconds')}")
 
-    print(f'{settings.APPLICATION_NAME} started at {time_now}')
     time1 = time.time()
     main()
     time2 = time.time()
 
-    time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
-        tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
-    print(f'{settings.APPLICATION_NAME} finished at {time_now}')
-    print(f'{settings.APPLICATION_NAME} took {(time2 - time1):.2f} seconds')
+    time_now = datetime.datetime.now().astimezone(tz=settings.TIME_ZONE)
+    print(f"{settings.APPLICATION_NAME} finished at {time_now.isoformat(timespec='seconds')}")
+    print(f"{settings.APPLICATION_NAME} took {(time2 - time1):.2f} seconds")
