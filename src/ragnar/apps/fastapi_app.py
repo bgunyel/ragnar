@@ -7,12 +7,11 @@ from pydantic import BaseModel
 import json
 import os
 from typing import AsyncGenerator, Optional
-from datetime import datetime
+import datetime
 import logging
 
 from config import settings
-from ragnar import BusinessIntelligenceAgent
-from .business_research import create_llm_config
+from ragnar import BusinessIntelligenceAgent, get_llm_config
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -26,11 +25,8 @@ async def lifespan(_: FastAPI):
     # Startup
     global bia
     try:
-        # Use your existing LLM configuration function
-        llm_config = create_llm_config()  # ✅ Same config as Streamlit app
-        
-        # Use your existing BusinessIntelligenceAgent initialization
-        # Same pattern as your Streamlit app
+        llm_config = get_llm_config()
+
         bia = BusinessIntelligenceAgent(
             llm_config=llm_config,
             web_search_api_key=settings.TAVILY_API_KEY,
@@ -57,7 +53,7 @@ app = FastAPI(
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
+    allow_origins = [str(origin).rstrip("/") for origin in settings.BACKEND_CORS_ORIGINS] + [settings.FRONTEND_HOST],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,9 +71,9 @@ class ChatResponse(BaseModel):
 
 @app.middleware("http")
 async def log_requests(request, call_next):
-    start_time = datetime.now()
+    start_time = datetime.datetime.now()
     response = await call_next(request)
-    process_time = (datetime.now() - start_time).total_seconds()
+    process_time = (datetime.datetime.now() - start_time).total_seconds()
 
     logger.info(
         f"{request.method} {request.url} - "
@@ -93,7 +89,7 @@ async def health_check():
         "status": "healthy",
         "service": "RAGNAR API",
         "agent_ready": bia is not None,
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.datetime.now().astimezone(settings.TIME_ZONE).isoformat()
     }
 
 
@@ -101,7 +97,7 @@ async def health_check():
 async def get_metrics():
     return {
         "status": "operational",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.datetime.now().astimezone(settings.TIME_ZONE).isoformat(),
         "service": "RAGNAR Business Intelligence API"
     }
 
@@ -172,7 +168,7 @@ async def detailed_status():
     return {
         "service": "RAGNAR Business Intelligence API",
         "status": "operational" if bia is not None else "degraded",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.datetime.now().astimezone(settings.TIME_ZONE).isoformat(),
         "components": {
             "database": db_status,
             "agent": agent_status,
@@ -189,4 +185,4 @@ if __name__ == "__main__":
     os.environ['LANGSMITH_API_KEY'] = getattr(settings, 'LANGSMITH_API_KEY', '')
     os.environ['LANGSMITH_TRACING'] = getattr(settings, 'LANGSMITH_TRACING', 'false')
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host=settings.BACKEND_HOST, port=settings.BACKEND_PORT, reload=False)
