@@ -1,17 +1,16 @@
 # src/ragnar/apps/fastapi_app.py
+import datetime
+import logging
+import os
+from typing import Optional, Any
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import json
-import os
-from typing import AsyncGenerator, Optional
-import datetime
-import logging
 
 from config import settings
-from ragnar import BusinessIntelligenceAgent, get_llm_config
+from ragnar import BusinessIntelligenceAgent, get_llm_config, DatabaseTable
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -65,8 +64,10 @@ class ChatMessage(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    response: str
+    content: str
     token_usage: dict
+    cost_list: list[dict[str, Any]]
+    total_cost: float
 
 
 @app.middleware("http")
@@ -111,43 +112,16 @@ async def chat_endpoint(chat_message: ChatMessage) -> ChatResponse:
     assert bia is not None  # Type assertion for static analysis
     try:
         # Use your existing run method
-        result = bia.run(query=chat_message.message)
+        result = await bia.run(query=chat_message.message)
         return ChatResponse(
-            response=result['content'],
-            token_usage=result['token_usage']
+            content=result['content'],
+            token_usage=result['token_usage'],
+            cost_list=result['cost_list'],
+            total_cost=result['total_cost'],
         )
     except Exception as e:
         logger.error(f"Chat endpoint error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/v1/chat/stream")
-async def chat_stream_endpoint(chat_message: ChatMessage):
-    if bia is None:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
-    
-    # At this point, bia is guaranteed to be a BusinessIntelligenceAgent instance
-    assert bia is not None  # Type assertion for static analysis
-
-    async def generate_stream() -> AsyncGenerator[str, None]:
-        try:
-            # Use your existing stream_response method!
-            for chunk in bia.stream_response(user_message=chat_message.message):
-                yield f"data: {json.dumps({'chunk': chunk, 'status': 'streaming'})}\n\n"
-            yield f"data: {json.dumps({'status': 'complete'})}\n\n"
-        except Exception as e:
-            logger.error(f"Streaming error: {str(e)}")
-            yield f"data: {json.dumps({'error': str(e), 'status': 'error'})}\n\n"
-
-    return StreamingResponse(
-        generate_stream(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-        }
-    )
-
 
 @app.get("/api/v1/status")
 async def detailed_status():
@@ -155,7 +129,7 @@ async def detailed_status():
     try:
         # Test database connection using your existing method
         if bia is not None:
-            _ = bia.fetch_company_by_name("Test Company")
+            _ = bia.list_all_names(table_name=DatabaseTable.COMPANIES)
             db_status = "connected"
             agent_status = "ready"
         else:
@@ -172,7 +146,7 @@ async def detailed_status():
         "components": {
             "database": db_status,
             "agent": agent_status,
-            "models": ["language_model", "reasoning_model"] if bia is not None else []
+            "models": bia.get_model_names() if bia is not None else []
         }
     }
 

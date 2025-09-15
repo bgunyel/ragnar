@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import os
 import time
@@ -27,7 +28,12 @@ def main():
 
         print(f'Ragnar: ', end='')
 
-        out_dict = bia.run(query=user_input)
+        # out_dict = bia.run(query=user_input)
+        # out_dict = await bia.run(query=user_input)
+        event_loop = asyncio.new_event_loop()
+        out_dict = event_loop.run_until_complete(bia.run(query=user_input))
+        event_loop.close()
+
         rich.print(out_dict['content'])
 
 

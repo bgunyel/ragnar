@@ -1,5 +1,4 @@
 import asyncio
-import time
 from uuid import uuid4
 from typing import Any, Literal
 import json
@@ -155,15 +154,10 @@ class BusinessIntelligenceAgent:
         self.graph = self.build_graph()
         self.message_memory.append(SystemMessage(content=AGENT_INSTRUCTIONS))
 
-    def stream_response(self, user_message: str):
-        out_dict = self.run(query=user_message)
+    def get_model_names(self) -> list[str]:
+        return self.models
 
-        for chunk in out_dict['content'].split(sep=' '):
-            chunk += ' '
-            yield chunk
-            time.sleep(0.05)
-
-    def run(self, query: str) -> dict[str, Any]:
+    async def run(self, query: str) -> dict[str, Any]:
         self.message_memory.append(HumanMessage(content=query))
         in_state = AgentState(
             messages = self.message_memory,
@@ -171,8 +165,7 @@ class BusinessIntelligenceAgent:
         )
 
         config = RunnableConfig(configurable={"thread_id": '1'})
-
-        out_state = self.graph.invoke(in_state, config)
+        out_state = await self.graph.ainvoke(in_state, config)
         self.message_memory = out_state['messages']
 
         cost_list, total_cost = calculate_token_cost(llm_config=self.llm_config, token_usage=out_state['token_usage'])
@@ -197,6 +190,8 @@ class BusinessIntelligenceAgent:
     def tools_call(self, state: AgentState) -> AgentState:
 
         for tool_call in state.messages[-1].tool_calls:
+
+            tool_message_content = ""
 
             match tool_call['name']:
                 case 'ResearchPerson':
@@ -410,6 +405,7 @@ class BusinessIntelligenceAgent:
         return response.data
 
     def list_all_names(self, table_name: str) -> list[dict[str, Any]]:
+        out = []
         match table_name:
             case Table.COMPANIES:
                 response = (

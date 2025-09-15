@@ -1,4 +1,5 @@
 from .agents import BusinessIntelligenceAgent
+from .agents import Table as DatabaseTable
 from config import settings
 from ai_common import LlmServers
 
@@ -40,5 +41,6 @@ def get_llm_config():
 
 __all__ = [
     'BusinessIntelligenceAgent',
+    'DatabaseTable',
     'get_llm_config',
 ]
