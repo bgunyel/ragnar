@@ -1,48 +1,18 @@
+import asyncio
 import datetime
 import os
 import time
 import rich
 
-from ai_common import LlmServers
-
 from config import settings
-from ragnar import BusinessIntelligenceAgent
+from ragnar import BusinessIntelligenceAgent, get_llm_config
 
 
 def main():
     os.environ['LANGSMITH_API_KEY'] = settings.LANGSMITH_API_KEY
     os.environ['LANGSMITH_TRACING'] = settings.LANGSMITH_TRACING
 
-    llm_config = {
-        'language_model': {
-            'model': 'llama-3.3-70b-versatile',
-            'model_provider': LlmServers.GROQ.value,
-            'api_key': settings.GROQ_API_KEY,
-            'model_args': {
-                'service_tier': "auto",
-                'temperature': 0,
-                'max_retries': 5,
-                'max_tokens': 32768,
-                'model_kwargs': {
-                    'top_p': 0.95,
-                }
-            }
-        },
-        'reasoning_model': {
-            'model': 'qwen/qwen3-32b', #'deepseek-r1-distill-llama-70b',
-            'model_provider': LlmServers.GROQ.value,
-            'api_key': settings.GROQ_API_KEY,
-            'model_args': {
-                'service_tier': "auto",
-                'temperature': 0,
-                'max_retries': 5,
-                'max_tokens': 32768,
-                'model_kwargs': {
-                    'top_p': 0.95,
-                }
-            }
-        }
-    }
+    llm_config = get_llm_config()
 
     bia = BusinessIntelligenceAgent(llm_config=llm_config,
                                     web_search_api_key=settings.TAVILY_API_KEY,
@@ -58,20 +28,23 @@ def main():
 
         print(f'Ragnar: ', end='')
 
-        out_dict = bia.run(query=user_input)
+        # out_dict = bia.run(query=user_input)
+        # out_dict = await bia.run(query=user_input)
+        event_loop = asyncio.new_event_loop()
+        out_dict = event_loop.run_until_complete(bia.run(query=user_input))
+        event_loop.close()
+
         rich.print(out_dict['content'])
 
 
 if __name__ == '__main__':
-    time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
-        tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
+    time_now = datetime.datetime.now().astimezone(tz=settings.TIME_ZONE)
+    print(f"{settings.APPLICATION_NAME} started at {time_now.isoformat(timespec='seconds')}")
 
-    print(f'{settings.APPLICATION_NAME} started at {time_now}')
     time1 = time.time()
     main()
     time2 = time.time()
 
-    time_now = datetime.datetime.now().replace(microsecond=0).astimezone(
-        tz=datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3'))
-    print(f'{settings.APPLICATION_NAME} finished at {time_now}')
-    print(f'{settings.APPLICATION_NAME} took {(time2 - time1):.2f} seconds')
+    time_now = datetime.datetime.now().astimezone(tz=settings.TIME_ZONE)
+    print(f"{settings.APPLICATION_NAME} finished at {time_now.isoformat(timespec='seconds')}")
+    print(f"{settings.APPLICATION_NAME} took {(time2 - time1):.2f} seconds")

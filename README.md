@@ -137,7 +137,7 @@ print(f"Tokens used: {result['token_usage']}")
 
 ## 🏗 Architecture
 
-RAGNAR uses a modern agent architecture built on LangGraph:
+RAGNAR uses a modern agent architecture built on LangGraph with a clean inheritance hierarchy:
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
@@ -152,12 +152,30 @@ RAGNAR uses a modern agent architecture built on LangGraph:
                                               └─────────────────┘
 ```
 
+### Class Hierarchy
+
+```
+BaseAgent (Abstract)
+├── Tool dispatcher pattern
+├── LangGraph workflow management
+├── State and memory handling
+└── Token usage tracking
+
+BusinessIntelligenceAgent (Concrete)
+├── Inherits from BaseAgent
+├── Business research capabilities
+├── Database operations
+└── 11 specialized tool handlers
+```
+
 ### Key Components
 
+- **BaseAgent**: Abstract base class with dispatcher pattern for tool handling
 - **StateGraph**: Manages conversation flow and state transitions
 - **Memory Saver**: Persists conversation history across sessions
 - **Business Researcher**: Handles web search and content analysis
 - **Supabase Client**: Manages database operations and caching
+- **Tool Handlers**: Clean, testable methods for each tool operation
 - **Token Tracker**: Monitors LLM usage and costs
 
 ## 🔧 Tools
@@ -234,11 +252,13 @@ ragnar/
 │       ├── __init__.py
 │       ├── agents/
 │       │   ├── __init__.py
+│       │   ├── base_agent.py               # Abstract base agent with dispatcher pattern
 │       │   ├── business_intelligence_agent.py
 │       │   ├── configuration.py
 │       │   ├── enums.py
 │       │   ├── state.py
-│       │   └── tools.py
+│       │   ├── tools.py
+│       │   └── utils.py
 │       └── apps/
 │           └── __init__.py
 ├── pyproject.toml               # Project configuration
@@ -249,6 +269,8 @@ ragnar/
 ### Key Design Patterns
 
 - **Agent Pattern**: Autonomous decision-making with tool selection
+- **Dispatcher Pattern**: Clean tool handler mapping instead of large match-case blocks
+- **Inheritance**: BaseAgent provides common functionality, child classes specialize
 - **State Management**: Immutable state transitions via LangGraph
 - **Dependency Injection**: Configurable LLM and database providers
 - **Separation of Concerns**: Distinct modules for research, storage, and UI

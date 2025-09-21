@@ -1,5 +1,5 @@
 from pydantic import Field
-from ai_common import CfgBase, TavilySearchCategory, TavilySearchDepth
+from ai_common import CfgBase
 
 
 class Configuration(CfgBase):

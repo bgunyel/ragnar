@@ -2,15 +2,12 @@ import datetime
 import os
 import time
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 import logging
-
 import streamlit as st
-from streamlit.runtime.uploaded_file_manager import UploadedFile
 
-from ai_common import LlmServers
 from config import settings
-from ragnar import BusinessIntelligenceAgent
+from ragnar import BusinessIntelligenceAgent, get_llm_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +23,7 @@ class StreamlitBusinessUI:
         self._initialize_session_state()
         self._setup_sidebar()
 
+    # noinspection PyMethodMayBeStatic
     def _setup_page_config(self):
         """Configure Streamlit page settings."""
         st.set_page_config(
@@ -51,7 +49,8 @@ class StreamlitBusinessUI:
             "processing": False,
             "last_response_time": None,
             "total_tokens_used": 0,
-            "conversation_started_at": datetime.datetime.now()
+            "conversation_started_at": datetime.datetime.now(),
+            "total_cost": 0.0,
         }
 
         for key, default_value in default_states.items():
@@ -64,8 +63,8 @@ class StreamlitBusinessUI:
             st.title("⚙️ Configuration")
 
             # Model configuration section
-            with st.expander("🤖 Model Settings", expanded=False):
-                self._render_model_settings()
+            # with st.expander("🤖 Model Settings", expanded=False):
+                # self._render_model_settings()
 
             # Session metrics
             with st.expander("📊 Session Metrics", expanded=True):
@@ -75,6 +74,7 @@ class StreamlitBusinessUI:
             with st.expander("💬 Conversation", expanded=False):
                 self._render_conversation_controls()
 
+    # noinspection PyMethodMayBeStatic
     def _render_model_settings(self):
         """Render model configuration controls."""
         # Language Model Settings
@@ -123,6 +123,7 @@ class StreamlitBusinessUI:
             st.session_state.agent = None  # Force agent recreation
             st.rerun()
 
+    # noinspection PyMethodMayBeStatic
     def _render_session_metrics(self):
         """Render session metrics and statistics."""
         col1, col2 = st.columns(2)
@@ -133,7 +134,7 @@ class StreamlitBusinessUI:
                 st.metric("Last Response", f"{st.session_state.last_response_time:.2f}s")
 
         with col2:
-            st.metric("Tokens Used", st.session_state.total_tokens_used)
+            st.metric("Total Cost", f"$ {st.session_state.total_cost:.2f}")
             session_duration = datetime.datetime.now() - st.session_state.conversation_started_at
             st.metric("Session Duration", str(session_duration).split('.')[0])
 
@@ -150,6 +151,7 @@ class StreamlitBusinessUI:
             st.session_state.agent_error = None
             st.rerun()
 
+    # noinspection PyMethodMayBeStatic
     def _clear_conversation(self):
         """Clear conversation history."""
         st.session_state.messages = []
@@ -157,6 +159,7 @@ class StreamlitBusinessUI:
         st.session_state.conversation_started_at = datetime.datetime.now()
         st.rerun()
 
+    # noinspection PyMethodMayBeStatic
     def _export_conversation(self):
         """Export conversation to downloadable format."""
         if not st.session_state.messages:
@@ -185,6 +188,7 @@ class StreamlitBusinessUI:
             mime="application/json"
         )
 
+    # noinspection PyMethodMayBeStatic
     def _get_or_create_agent(self) -> Optional[BusinessIntelligenceAgent]:
         """Get existing agent or create new one with error handling."""
         if st.session_state.agent is not None and st.session_state.agent_error is None:
@@ -257,14 +261,15 @@ class StreamlitBusinessUI:
                         col1, col2, col3 = st.columns(3)
 
                         with col1:
-                            if "response_time" in metadata:
-                                st.metric("Response Time", f"{metadata['response_time']:.2f}s")
-                        with col2:
-                            if "tokens_used" in metadata:
-                                st.metric("Tokens Used", metadata["tokens_used"])
-                        with col3:
                             if "timestamp" in metadata:
                                 st.caption(f"Generated at: {metadata['timestamp']}")
+                        with col2:
+                            if "response_time" in metadata:
+                                st.metric("Response Time", f"{metadata['response_time']:.2f}s")
+                        with col3:
+                            if "cost" in metadata:
+                                st.metric("Token Cost", f"$ {metadata["cost"]:.4f}")
+
 
         # Chat input with processing state
         if st.session_state.processing:
@@ -275,6 +280,7 @@ class StreamlitBusinessUI:
             if user_message:
                 self._process_user_message(user_message, agent)
 
+    # noinspection PyMethodMayBeStatic
     def _process_user_message(self, user_message: str, agent: BusinessIntelligenceAgent):
         """Process user message with comprehensive error handling."""
         # Add user message to history
@@ -293,7 +299,8 @@ class StreamlitBusinessUI:
 
             with st.chat_message("assistant"):
                 with st.spinner("Analyzing your request..."):
-                    response_stream = agent.stream_response(user_message=user_message)
+                    out_dict = agent.run(query=user_message)
+                    response_stream = self.stream_response(text=out_dict['content'])
                     result = st.write_stream(response_stream)
 
             end_time = time.time()
@@ -303,8 +310,8 @@ class StreamlitBusinessUI:
             metadata = {
                 "response_time": response_time,
                 "timestamp": datetime.datetime.now().isoformat(),
-                "model": st.session_state.model_settings['language_model']['model'],
-                "tokens_used": "N/A"  # Would need to be provided by agent
+                "token_usage": out_dict['token_usage'],
+                "cost": out_dict['total_cost']
             }
 
             # Add assistant response to history
@@ -317,6 +324,7 @@ class StreamlitBusinessUI:
 
             # Update session metrics
             st.session_state.last_response_time = response_time
+            st.session_state.total_cost += out_dict['total_cost']
             st.session_state.total_tokens_used += 1  # Placeholder - would need actual token count
 
         except Exception as e:
@@ -339,7 +347,16 @@ class StreamlitBusinessUI:
 
         finally:
             st.session_state.processing = False
-            st.rerun()
+        
+        # Rerun outside the finally block to avoid unreachable code warning
+        st.rerun()
+
+    # noinspection PyMethodMayBeStatic
+    def stream_response(self, text: str):
+        for chunk in text.split(sep=' '):
+            chunk += ' '
+            yield chunk
+            time.sleep(0.05)
 
     def render(self):
         """Main render method for the UI."""
@@ -363,36 +380,8 @@ def create_llm_config() -> Dict[str, Any]:
         st.error(f"Missing required settings: {', '.join(missing_settings)}")
         st.stop()
 
-    return {
-        'language_model': {
-            'model': 'llama-3.3-70b-versatile',
-            'model_provider': LlmServers.GROQ.value,
-            'api_key': settings.GROQ_API_KEY,
-            'model_args': {
-                'service_tier': "auto",
-                'temperature': 0,
-                'max_retries': 5,
-                'max_tokens': 32768,
-                'model_kwargs': {
-                    'top_p': 0.95,
-                }
-            }
-        },
-        'reasoning_model': {
-            'model': 'qwen/qwen3-32b',
-            'model_provider': LlmServers.GROQ.value,
-            'api_key': settings.GROQ_API_KEY,
-            'model_args': {
-                'service_tier': "auto",
-                'temperature': 0,
-                'max_retries': 5,
-                'max_tokens': 32768,
-                'model_kwargs': {
-                    'top_p': 0.95,
-                }
-            }
-        }
-    }
+    llm_config = get_llm_config()
+    return llm_config
 
 
 def main():
