@@ -1,5 +1,6 @@
 from abc import ABC
 from typing import Any, Literal
+from pydantic import BaseModel
 
 from ai_common import calculate_token_cost
 from langchain.chat_models import init_chat_model
@@ -11,7 +12,7 @@ from langgraph.graph import START, END, StateGraph
 
 from .configuration import Configuration
 from .enums import Node
-from .state import AgentState
+from .state import AgentState, DeepAgentState
 
 
 def should_continue(state: AgentState) -> Literal['continue', 'end']:
@@ -56,11 +57,12 @@ class BaseAgent(ABC):
                 return state, message_content
     """
 
-    def __init__(self, llm_config: dict[str, Any], tools: list, agent_instructions: str):
+    def __init__(self, llm_config: dict[str, Any], tools: list, agent_instructions: str, is_deep_agent: bool = False):
         self.memory_saver = MemorySaver()
         self.models = list({*[v['model'] for k, v in llm_config.items()]})
         self.message_memory = []
         self.llm_config = llm_config
+        self.is_deep_agent = is_deep_agent
 
         model_params = llm_config['reasoning_model']
         base_llm = init_chat_model(
@@ -80,10 +82,18 @@ class BaseAgent(ABC):
 
     async def run(self, query: str) -> dict[str, Any]:
         self.message_memory.append(HumanMessage(content=query))
-        in_state = AgentState(
-            messages=self.message_memory,
-            token_usage={m: {'input_tokens': 0, 'output_tokens': 0} for m in self.models},
-        )
+
+        if self.is_deep_agent:
+            in_state = DeepAgentState(
+                messages=self.message_memory,
+                token_usage={m: {'input_tokens': 0, 'output_tokens': 0} for m in self.models},
+                todos=[]
+            )
+        else:
+            in_state = AgentState(
+                messages=self.message_memory,
+                token_usage={m: {'input_tokens': 0, 'output_tokens': 0} for m in self.models},
+            )
 
         config = RunnableConfig(configurable={"thread_id": '1'})
         out_state = await self.graph.ainvoke(in_state, config)
@@ -99,7 +109,7 @@ class BaseAgent(ABC):
 
         return out_dict
 
-    def llm_call(self, state: AgentState) -> AgentState:
+    def llm_call(self, state: BaseModel) -> BaseModel:
         with get_usage_metadata_callback() as cb:
             response = self.structured_llm.invoke(state.messages)
             state.token_usage[self.model_name]['input_tokens'] += cb.usage_metadata[self.model_name]['input_tokens']
@@ -107,7 +117,7 @@ class BaseAgent(ABC):
             state.messages.extend([response])
         return state
 
-    def tools_call(self, state: AgentState) -> AgentState:
+    def tools_call(self, state: BaseModel) -> BaseModel:
         for tool_call in state.messages[-1].tool_calls:
             handler = self.tool_handlers.get(tool_call['name'])
             if handler:
@@ -129,7 +139,11 @@ class BaseAgent(ABC):
         return state
 
     def build_graph(self):
-        workflow = StateGraph(AgentState, config_schema=Configuration)
+
+        if self.is_deep_agent:
+            workflow = StateGraph(DeepAgentState, config_schema=Configuration)
+        else:
+            workflow = StateGraph(AgentState, config_schema=Configuration)
 
         ## Nodes
         workflow.add_node(node=Node.LLM_CALL, action=self.llm_call)

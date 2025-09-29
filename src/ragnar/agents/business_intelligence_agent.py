@@ -1,5 +1,6 @@
 import asyncio
 import json
+from turtledemo.sorting_animate import instructions1
 from typing import Any
 from uuid import uuid4
 
@@ -9,7 +10,8 @@ from supabase import create_client, Client
 
 from .base_agent import BaseAgent
 from .enums import Table, ColumnsBase, CompaniesColumns, PersonsColumns
-from .state import AgentState
+from .state import AgentState, DeepAgentState
+from .planning_tools import WriteTodos, ReadTodos, PLANNING_INSTRUCTIONS, handle_write_todos, handle_read_todos
 from .tools import (
     ResearchPerson,
     ResearchCompany,
@@ -34,7 +36,7 @@ You can use any of the tools provided to you.
 You can call these tools in series or in parallel, your functionality is conducted in a tool-calling loop.
 </Task>
 
-<Available Tools>
+<Main Tools>
 You have access to the following main tools:
 1. **ResearchPerson**: To research a specific person within a company using web search.
 2. **ResearchCompany**: To research a company using web search.
@@ -86,7 +88,15 @@ You have access to the following main tools:
             key_executives: ['Aravind Srinivas', 'Denis Yarats'],
             similar_companies: ['Anthropic', 'OpenAI', 'Hugging Face', 'Glean']
         }        
-</Available Tools>
+</Main Tools>
+"""
+
+ADVANCED_TOOL_INSTRUCTIONS = """
+<Advanced Tools>
+You have access to the following advanced tools:
+
+{advanced_tools}
+</Advanced Tools>
 """
 
 CONFIG = RunnableConfig(
@@ -111,7 +121,12 @@ TOOLS = [
             FetchPersonFromDataBase,
             ListAllPersonNamesFromDataBase,
             ListAllCompanyNamesFromDataBase,
-            ListPersonsFromCompanyId
+            ListPersonsFromCompanyId,
+        ]
+
+DEEP_AGENT_TOOLS = [
+            WriteTodos,
+            ReadTodos,
         ]
 
 class BusinessIntelligenceAgent(BaseAgent):
@@ -121,7 +136,11 @@ class BusinessIntelligenceAgent(BaseAgent):
                  database_url: str,
                  database_key: str):
 
-        super().__init__(llm_config=llm_config, tools=TOOLS, agent_instructions=AGENT_INSTRUCTIONS)
+        is_deep_agent = True
+        tools = TOOLS + DEEP_AGENT_TOOLS if is_deep_agent else TOOLS
+        instructions = AGENT_INSTRUCTIONS + ADVANCED_TOOL_INSTRUCTIONS.format(advanced_tools=PLANNING_INSTRUCTIONS) if is_deep_agent else AGENT_INSTRUCTIONS
+
+        super().__init__(llm_config=llm_config, tools=tools, agent_instructions=instructions, is_deep_agent=is_deep_agent)
         self.business_researcher = BusinessResearcher(llm_config = llm_config, web_search_api_key = web_search_api_key)
         self.db_client: Client = create_client(supabase_url=database_url, supabase_key=database_key)
 
@@ -138,6 +157,8 @@ class BusinessIntelligenceAgent(BaseAgent):
             'ListAllPersonNamesFromDataBase': self._handle_list_persons,
             'ListAllCompanyNamesFromDataBase': self._handle_list_companies,
             'ListPersonsFromCompanyId': self._handle_list_persons_from_company,
+            'WriteTodos': handle_write_todos,
+            'ReadTodos': handle_read_todos,
         }
 
     def research_person(self, name: str, company: str, state: AgentState) -> tuple[AgentState, dict[str, Any]]:
@@ -359,3 +380,5 @@ class BusinessIntelligenceAgent(BaseAgent):
     def _handle_list_persons_from_company(self, tool_call: dict, state: AgentState) -> tuple[AgentState, str]:
         response = self.list_persons_from_company_id(company_id=tool_call['args']['company_id'])
         return state, json.dumps(response, indent=2)
+
+
