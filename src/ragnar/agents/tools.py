@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from business_researcher import CompanySchema, PersonSchema
+from .state import ToDo
 
 class ResearchPerson(BaseModel):
     """Research a specific person within a company using web search and AI analysis."""
