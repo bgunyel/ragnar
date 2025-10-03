@@ -1,6 +1,5 @@
 import asyncio
 import json
-from turtledemo.sorting_animate import instructions1
 from typing import Any
 from uuid import uuid4
 
@@ -10,7 +9,7 @@ from supabase import create_client, Client
 
 from .base_agent import BaseAgent
 from .enums import Table, ColumnsBase, CompaniesColumns, PersonsColumns
-from .state import AgentState, DeepAgentState
+from .state import AgentState
 from .planning_tools import WriteTodos, ReadTodos, PLANNING_INSTRUCTIONS, handle_write_todos, handle_read_todos
 from .tools import (
     ResearchPerson,
@@ -168,7 +167,7 @@ class BusinessIntelligenceAgent(BaseAgent):
             'search_type': SearchType.PERSON
         }
         out_dict = self.run_research_loop(input_dict=input_dict)
-        state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
+        state = self._update_token_usage(state=state, token_usage=out_dict['token_usage'])
         return state, out_dict
 
     def research_company(self, company_name: str, state: AgentState) -> tuple[AgentState, dict[str, Any]]:
@@ -177,7 +176,7 @@ class BusinessIntelligenceAgent(BaseAgent):
             'search_type': SearchType.COMPANY
         }
         out_dict = self.run_research_loop(input_dict=input_dict)
-        state = self.update_token_usage(state=state, token_usage=out_dict['token_usage'])
+        state = self._update_token_usage(state=state, token_usage=out_dict['token_usage'])
         return state, out_dict
 
     def run_research_loop(self, input_dict: dict[str, Any]) -> dict[str, Any]:
