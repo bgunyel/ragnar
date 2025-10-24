@@ -99,6 +99,7 @@ You have access to the following advanced tools:
 """
 
 CONFIG = RunnableConfig(
+    recursion_limit=50,
     configurable={
         'thread_id': str(uuid4()),
         'max_iterations': 3,
@@ -106,8 +107,8 @@ CONFIG = RunnableConfig(
         'max_tokens_per_source': 10000,
         'number_of_days_back': 1e6,
         'number_of_queries': 3,
-        }
-)
+        },
+    )
 
 TOOLS = [
             ResearchPerson,
