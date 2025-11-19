@@ -10,10 +10,10 @@ requires-python = ">=3.13"
 dependencies = [
     "ai-common @ git+https://github.com/bgunyel/ai-common.git@main",
     "business-researcher @ git+https://github.com/bgunyel/business-researcher.git@main",
-    "fastapi>=0.116.1",
-    "streamlit>=1.47.1",
-    "supabase>=2.17.0",
-    "uvicorn>=0.35.0",
+    "fastapi==0.120.0",
+    "streamlit==1.50.0",
+    "supabase==2.22.1",
+    "uvicorn==0.38.0",
 ]
 
 [project.scripts]

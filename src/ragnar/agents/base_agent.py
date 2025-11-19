@@ -1,5 +1,6 @@
 from abc import ABC
 from typing import Any, Literal
+from pydantic import BaseModel
 
 from ai_common import calculate_token_cost
 from langchain.chat_models import init_chat_model
@@ -11,10 +12,10 @@ from langgraph.graph import START, END, StateGraph
 
 from .configuration import Configuration
 from .enums import Node
-from .state import AgentState
+from .state import AgentState, DeepAgentState
 
 
-def should_continue(state: AgentState) -> Literal['continue', 'end']:
+def _should_continue(state: AgentState) -> Literal['continue', 'end']:
     # If the last message is not a tool call, then we finish
     if len(state.messages[-1].tool_calls) == 0:
         return "end"
@@ -56,11 +57,12 @@ class BaseAgent(ABC):
                 return state, message_content
     """
 
-    def __init__(self, llm_config: dict[str, Any], tools: list, agent_instructions: str):
-        self.memory_saver = MemorySaver()
-        self.models = list({*[v['model'] for k, v in llm_config.items()]})
-        self.message_memory = []
-        self.llm_config = llm_config
+    def __init__(self, llm_config: dict[str, Any], tools: list, agent_instructions: str, is_deep_agent: bool = False):
+        self._memory_saver = MemorySaver()
+        self._models = list({*[v['model'] for k, v in llm_config.items()]})
+        self._message_memory = []
+        self._llm_config = llm_config
+        self._is_deep_agent = is_deep_agent
 
         model_params = llm_config['reasoning_model']
         base_llm = init_chat_model(
@@ -69,26 +71,34 @@ class BaseAgent(ABC):
             api_key=model_params['api_key'],
             **model_params['model_args']
         )
-        self.model_name = model_params['model']
-        self.structured_llm = base_llm.bind_tools(tools=tools)
-        self.graph = self.build_graph()
-        self.message_memory.append(SystemMessage(content=agent_instructions))
-        self.tool_handlers = dict()
+        self._model_name = model_params['model']
+        self._structured_llm = base_llm.bind_tools(tools=tools)
+        self._graph = self._build_graph()
+        self._message_memory.append(SystemMessage(content=agent_instructions))
+        self._tool_handlers = dict()
 
     def get_model_names(self) -> list[str]:
-        return self.models
+        return self._models
 
     async def run(self, query: str) -> dict[str, Any]:
-        self.message_memory.append(HumanMessage(content=query))
-        in_state = AgentState(
-            messages=self.message_memory,
-            token_usage={m: {'input_tokens': 0, 'output_tokens': 0} for m in self.models},
-        )
+        self._message_memory.append(HumanMessage(content=query))
+
+        if self._is_deep_agent:
+            in_state = DeepAgentState(
+                messages=self._message_memory,
+                token_usage={m: {'input_tokens': 0, 'output_tokens': 0} for m in self._models},
+                todos=[]
+            )
+        else:
+            in_state = AgentState(
+                messages=self._message_memory,
+                token_usage={m: {'input_tokens': 0, 'output_tokens': 0} for m in self._models},
+            )
 
         config = RunnableConfig(configurable={"thread_id": '1'})
-        out_state = await self.graph.ainvoke(in_state, config)
-        self.message_memory = out_state['messages']
-        cost_list, total_cost = calculate_token_cost(llm_config=self.llm_config, token_usage=out_state['token_usage'])
+        out_state = await self._graph.ainvoke(in_state, config)
+        self._message_memory = out_state['messages']
+        cost_list, total_cost = calculate_token_cost(llm_config=self._llm_config, token_usage=out_state['token_usage'])
 
         out_dict = {
             'content': out_state['messages'][-1].content,
@@ -99,17 +109,17 @@ class BaseAgent(ABC):
 
         return out_dict
 
-    def llm_call(self, state: AgentState) -> AgentState:
+    def _llm_call(self, state: BaseModel) -> BaseModel:
         with get_usage_metadata_callback() as cb:
-            response = self.structured_llm.invoke(state.messages)
-            state.token_usage[self.model_name]['input_tokens'] += cb.usage_metadata[self.model_name]['input_tokens']
-            state.token_usage[self.model_name]['output_tokens'] += cb.usage_metadata[self.model_name]['output_tokens']
+            response = self._structured_llm.invoke(state.messages)
+            state.token_usage[self._model_name]['input_tokens'] += cb.usage_metadata[self._model_name]['input_tokens']
+            state.token_usage[self._model_name]['output_tokens'] += cb.usage_metadata[self._model_name]['output_tokens']
             state.messages.extend([response])
         return state
 
-    def tools_call(self, state: AgentState) -> AgentState:
+    def _tools_call(self, state: BaseModel) -> BaseModel:
         for tool_call in state.messages[-1].tool_calls:
-            handler = self.tool_handlers.get(tool_call['name'])
+            handler = self._tool_handlers.get(tool_call['name'])
             if handler:
                 state, tool_message_content = handler(tool_call, state)
             else:
@@ -122,25 +132,29 @@ class BaseAgent(ABC):
             ))
         return state
 
-    def update_token_usage(self, state: AgentState, token_usage: dict[str, Any]) -> AgentState:
-        for m in self.models:
+    def _update_token_usage(self, state: AgentState, token_usage: dict[str, Any]) -> AgentState:
+        for m in self._models:
             state.token_usage[m]['input_tokens'] += token_usage[m]['input_tokens']
             state.token_usage[m]['output_tokens'] += token_usage[m]['output_tokens']
         return state
 
-    def build_graph(self):
-        workflow = StateGraph(AgentState, config_schema=Configuration)
+    def _build_graph(self):
+
+        if self._is_deep_agent:
+            workflow = StateGraph(DeepAgentState, config_schema=Configuration)
+        else:
+            workflow = StateGraph(AgentState, config_schema=Configuration)
 
         ## Nodes
-        workflow.add_node(node=Node.LLM_CALL, action=self.llm_call)
-        workflow.add_node(node=Node.TOOLS_CALL, action=self.tools_call)
+        workflow.add_node(node=Node.LLM_CALL, action=self._llm_call)
+        workflow.add_node(node=Node.TOOLS_CALL, action=self._tools_call)
 
         ## Edges
         workflow.add_edge(start_key=START, end_key=Node.LLM_CALL)
         workflow.add_edge(start_key=Node.TOOLS_CALL, end_key=Node.LLM_CALL)
         workflow.add_conditional_edges(
             source=Node.LLM_CALL,
-            path=should_continue,
+            path=_should_continue,
             path_map={
                 "continue": Node.TOOLS_CALL,
                 "end": END,
@@ -148,5 +162,5 @@ class BaseAgent(ABC):
         )
 
         ## Compile graph
-        compiled_graph = workflow.compile(checkpointer=self.memory_saver)
+        compiled_graph = workflow.compile(checkpointer=self._memory_saver)
         return compiled_graph
