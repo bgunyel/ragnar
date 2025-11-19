@@ -1,6 +1,7 @@
 import os
 import datetime
 from pydantic_settings import BaseSettings
+from pydantic import SecretStr
 
 FILE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_FILE_DIR = os.path.abspath(os.path.join(FILE_DIR, os.pardir))
@@ -11,14 +12,15 @@ class Settings(BaseSettings):
 
     TIME_ZONE: datetime.timezone = datetime.timezone(offset=datetime.timedelta(hours=3), name='UTC+3')
 
-    TAVILY_API_KEY: str = ""
-    GROQ_API_KEY: str = ""
-    OPENAI_API_KEY: str = ""
-    ANTHROPIC_API_KEY: str = ""
-    LANGSMITH_API_KEY: str = ""
+    ANTHROPIC_API_KEY: SecretStr = ""
+    GROQ_API_KEY: SecretStr = ""
+    LANGSMITH_API_KEY: SecretStr = ""
     LANGSMITH_TRACING: str = "false"
-    SUPABASE_URL: str = ""
-    SUPABASE_SECRET_KEY: str = ""
+    OLLAMA_API_KEY: SecretStr = ""
+    OPENAI_API_KEY: SecretStr = ""
+    SUPABASE_URL: SecretStr = ""
+    SUPABASE_SECRET_KEY: SecretStr = ""
+    TAVILY_API_KEY: SecretStr = ""
 
     OUT_FOLDER: str = os.path.join(ENV_FILE_DIR, 'out')
 

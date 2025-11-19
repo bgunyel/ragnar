@@ -2,7 +2,7 @@ from abc import ABC
 from typing import Any, Literal
 from pydantic import BaseModel
 
-from ai_common import calculate_token_cost
+from ai_common import calculate_token_cost, get_llm
 from langchain.chat_models import init_chat_model
 from langchain_core.callbacks import get_usage_metadata_callback
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
@@ -57,20 +57,25 @@ class BaseAgent(ABC):
                 return state, message_content
     """
 
-    def __init__(self, llm_config: dict[str, Any], tools: list, agent_instructions: str, is_deep_agent: bool = False):
+    def __init__(self,
+                 llm_config: dict[str, Any],
+                 tools: list, agent_instructions: str,
+                 runnable_config: RunnableConfig,
+                 is_deep_agent: bool = False):
         self._memory_saver = MemorySaver()
         self._models = list({*[v['model'] for k, v in llm_config.items()]})
         self._message_memory = []
         self._llm_config = llm_config
         self._is_deep_agent = is_deep_agent
+        self._runnable_config = runnable_config
 
         model_params = llm_config['reasoning_model']
-        base_llm = init_chat_model(
-            model=model_params['model'],
-            model_provider=model_params['model_provider'],
-            api_key=model_params['api_key'],
-            **model_params['model_args']
-        )
+        base_llm = get_llm(model_name=model_params['model'],
+                           model_provider=model_params['model_provider'],
+                           api_key=model_params['api_key'],
+                           model_args=model_params['model_args'])
+
+
         self._model_name = model_params['model']
         self._structured_llm = base_llm.bind_tools(tools=tools)
         self._graph = self._build_graph()
@@ -95,8 +100,7 @@ class BaseAgent(ABC):
                 token_usage={m: {'input_tokens': 0, 'output_tokens': 0} for m in self._models},
             )
 
-        config = RunnableConfig(configurable={"thread_id": '1'})
-        out_state = await self._graph.ainvoke(in_state, config)
+        out_state = await self._graph.ainvoke(in_state, self._runnable_config)
         self._message_memory = out_state['messages']
         cost_list, total_cost = calculate_token_cost(llm_config=self._llm_config, token_usage=out_state['token_usage'])
 

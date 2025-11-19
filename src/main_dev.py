@@ -9,7 +9,7 @@ from ragnar import BusinessIntelligenceAgent, get_llm_config
 
 
 def main():
-    os.environ['LANGSMITH_API_KEY'] = settings.LANGSMITH_API_KEY
+    os.environ['LANGSMITH_API_KEY'] = settings.LANGSMITH_API_KEY.get_secret_value()
     os.environ['LANGSMITH_TRACING'] = settings.LANGSMITH_TRACING
 
     llm_config = get_llm_config()
