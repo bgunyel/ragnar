@@ -4,4 +4,4 @@ from ai_common import CfgBase
 
 class Configuration(CfgBase):
     """The configurable fields for the workflow"""
-    max_iterations: int = Field(gt=0)  # (0, inf)
+    name: str = Field(description="Name of the agent.")  # (0, inf)

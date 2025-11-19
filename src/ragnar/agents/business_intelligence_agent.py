@@ -6,6 +6,7 @@ from uuid import uuid4
 from business_researcher import BusinessResearcher, SearchType
 from langchain_core.runnables import RunnableConfig
 from supabase import create_client, Client
+from ai_common import TavilySearchCategory, TavilySearchDepth
 
 from .base_agent import BaseAgent
 from .enums import Table, ColumnsBase, CompaniesColumns, PersonsColumns
@@ -98,17 +99,19 @@ You have access to the following advanced tools:
 </Advanced Tools>
 """
 
-CONFIG = RunnableConfig(
-    recursion_limit=50,
-    configurable={
-        'thread_id': str(uuid4()),
-        'max_iterations': 3,
-        'max_results_per_query': 4,
-        'max_tokens_per_source': 10000,
-        'number_of_days_back': 1e6,
-        'number_of_queries': 3,
-        },
-    )
+BUSINESS_RESEARCH_CONFIG = RunnableConfig(
+        recursion_limit=100,
+        configurable = {
+            'thread_id': str(uuid4()),
+            'max_iterations': 5,
+            'max_results_per_query': 5,
+            'max_tokens_per_source': 10000,
+            'number_of_days_back': 360,
+            'number_of_queries': 4,
+            'search_category': TavilySearchCategory.GENERAL,
+            'search_depth': TavilySearchDepth.ADVANCED,
+            },
+        )
 
 TOOLS = [
             ResearchPerson,
@@ -140,12 +143,24 @@ class BusinessIntelligenceAgent(BaseAgent):
         tools = TOOLS + DEEP_AGENT_TOOLS if is_deep_agent else TOOLS
         instructions = AGENT_INSTRUCTIONS + ADVANCED_TOOL_INSTRUCTIONS.format(advanced_tools=PLANNING_INSTRUCTIONS) if is_deep_agent else AGENT_INSTRUCTIONS
 
-        super().__init__(llm_config=llm_config, tools=tools, agent_instructions=instructions, is_deep_agent=is_deep_agent)
+        super().__init__(
+            llm_config=llm_config,
+            tools=tools,
+            agent_instructions=instructions,
+            is_deep_agent=is_deep_agent,
+            runnable_config=RunnableConfig(
+                recursion_limit=1_000,
+                configurable={
+                    'thread_id': str(uuid4()),
+                    'name': 'BIA',
+                    },
+                ),
+            )
         self.business_researcher = BusinessResearcher(llm_config = llm_config, web_search_api_key = web_search_api_key)
         self.db_client: Client = create_client(supabase_url=database_url, supabase_key=database_key)
 
         # Tool dispatcher mapping
-        self.tool_handlers = {
+        self._tool_handlers = {
             'ResearchPerson': self._handle_research_person,
             'ResearchCompany': self._handle_research_company,
             'FetchCompanyFromDataBase': self._handle_fetch_company,
@@ -182,7 +197,7 @@ class BusinessIntelligenceAgent(BaseAgent):
 
     def run_research_loop(self, input_dict: dict[str, Any]) -> dict[str, Any]:
         event_loop = asyncio.new_event_loop()
-        out_dict = event_loop.run_until_complete(self.business_researcher.run(input_dict=input_dict, config=CONFIG))
+        out_dict = event_loop.run_until_complete(self.business_researcher.run(input_dict=input_dict, config=BUSINESS_RESEARCH_CONFIG))
         event_loop.close()
         return out_dict
 
